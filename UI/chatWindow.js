@@ -2500,12 +2500,14 @@
                         <div id="textFromServer"></div> \
                     </div> \
                     {{/if}}\
+                    {{if isAttachmentEnabled}}\
                     <div class="sdkFooterIcon"> \
                         <button class="sdkAttachment attachmentBtn" title="Attachment"> \
                             <i class="paperclip"></i> \
                         </button> \
                         <input type="file" name="Attachment" class="filety" id="captureAttachmnts"> \
                     </div> \
+                    {{/if}}\
                     {{if !(isSendButton)}}<div class="chatSendMsg">Press enter to send</div>{{/if}} \
                 </div>';
 
