@@ -6,7 +6,7 @@
   var BOT_USER_IDENTITY = 'csaa_chat_unique_id';
   var CHAT_MAXIMIZED = 'csaa_chat_maximized';
   var MESSAGE_COUNTER = 'chatHistoryCount';
-  var LIVE_CHAT_FLAG = 'agentTfrOn';
+  var LIVE_CHAT = 'agentTfrOn';
 
   function csaaKoreBotChat() {
     var koreJquery;
@@ -188,25 +188,6 @@
           
           bot.RtmClient.on('ws_close', function (event) {
             //where event is web socket's onclose event
-    
-            // need a way to distinguish between ws_close from close button, or bot is reconnectiong
-            // if (localStorage.getItem(CHAT_MAXIMIZED)) return // return for reconneting events
-    
-            localStorage.removeItem(CHAT_MAXIMIZED);
-            localStorage.removeItem(BOT_USER_IDENTITY);
-            localStorage.removeItem(JWT_GRANT);
-            localStorage.removeItem(RESTORE_P_S);
-            localStorage.removeItem(MESSAGE_COUNTER);
-            localStorage.removeItem(LIVE_CHAT_FLAG);
-    
-            chatConfig.botOptions.userIdentity = getBotUserIdentity();
-            chatConfig.botOptions.chatHistory = undefined;
-    
-            chatConfig.chatHistory = undefined;
-            chatConfig.handleError = undefined;
-            chatConfig.loadHistory = false;
-    
-            setChatIconVisibility(true);
           });
         });
     
@@ -214,6 +195,32 @@
         bot.on('open', function (response) {
           localStorage.setItem(RESTORE_P_S, 'true');
           localStorage.setItem(JWT_GRANT, JSON.stringify(bot.userInfo));
+
+          $('.close-btn').on('click', function () {
+            if (localStorage.getItem(LIVE_CHAT) === 'true') {
+              var messageToBot = {
+                message: { body: 'endAgentChat' },
+                resourceid: '/bot.message'
+              };
+              bot.sendMessage(messageToBot);
+            }
+    
+            localStorage.removeItem(CHAT_MAXIMIZED);
+            localStorage.removeItem(BOT_USER_IDENTITY);
+            localStorage.removeItem(JWT_GRANT);
+            localStorage.removeItem(RESTORE_P_S);
+            localStorage.removeItem(MESSAGE_COUNTER);
+            localStorage.removeItem(LIVE_CHAT);
+
+            chatConfig.botOptions.userIdentity = getBotUserIdentity();
+            chatConfig.botOptions.chatHistory = undefined;
+
+            chatConfig.chatHistory = undefined;
+            chatConfig.handleError = undefined;
+            chatConfig.loadHistory = false;
+    
+            setChatIconVisibility(true);
+          });
         });
     
         // Event occurs when you recieve any message from server
@@ -237,6 +244,14 @@
               var $buyBtn = $(this).find('.buyBtn')
               $buyBtn.trigger('click');
             });
+
+            if (dataObj.message[0].component.payload.text === 'You are now connected to an Agent.') {
+              localStorage.setItem(LIVE_CHAT, 'true');
+            }
+
+            if (dataObj.message[0].component.payload.text === 'Live Agent Chat has ended.') {
+              localStorage.setItem(LIVE_CHAT, 'false');
+            }
           }
         });
 
