@@ -7,11 +7,11 @@
   var CHAT_MAXIMIZED = 'csaa_chat_maximized';
   var MESSAGE_COUNTER = 'chatHistoryCount';
   var LIVE_CHAT = 'agentTfrOn';
-  var CHAT_WINDOW_OPENED
+  var CHAT_WINDOW_OPENED = false;
 
   function csaaKoreBotChat() {
     var koreJquery;
-  
+
     if (window && window.KoreSDK && window.KoreSDK.dependencies && window.KoreSDK.dependencies.jQuery) {
       //load kore's jquery version
       koreJquery = window.KoreSDK.dependencies.jQuery;
@@ -28,9 +28,9 @@
       function init (chatInstance) {
         return function (botOptions, configOverrides, chatLifeCycle) {
           if (!chatLifeCycle.shouldChatContruct()) return;
-    
+
           var chatConfig = getChatConfig(botOptions, configOverrides, chatInstance);
-    
+
           var originalShow = chatInstance.show;
           var wrapperShow = function () {
             if (chatLifeCycle.onWillMount) chatLifeCycle.onWillMount();
@@ -41,7 +41,7 @@
     
             return chatInstance;
           }
-    
+
           var originalDestroy = chatInstance.destroy
           var wrapperDestroy = function () {
             if (chatLifeCycle.onWillUnmount) chatLifeCycle.onWillUnmount();
@@ -52,27 +52,27 @@
     
             return chatInstance;
           };
-    
+
           chatInstance.show = wrapperShow;
           chatInstance.destroy = wrapperDestroy;
-    
+
           var setChatIconVisibility = function (visibility) {
             var $bubble = $('[chat=bubble]');
             visibility ? $bubble.attr('visible', 'yep') : $bubble.attr('visible', 'nope');
           }
     
           attachChatIconUI($);
-    
+
           if (chatConfig.disabled) {
             setChatIconVisibility(true);
             return;
           }
-    
+
           initializeSession.apply(this, [chatConfig, setChatIconVisibility]);
           bindEventListeners(chatConfig, chatInstance, setChatIconVisibility);
         };
       }
-    
+
       function getChatConfig (chatBotOptions, configOverrides, chatInstance) {
         //Define the bot options
         var botOptions = {};
@@ -86,7 +86,7 @@
         botOptions.userIdentity = 'PLEASE_ENTER_USER_EMAIL_ID';// Provide users email id here
         botOptions.clientId = 'PLEASE_ENTER_CLIENT_ID'; // issued by the kore.ai on client app registration.
         // botOptions.clientSecret = 'PLEASE_ENTER_CLIENT_SECRET';// issued by the kore.ai on client app registration.
-    
+
         // Assign Bot options to chatWindow config
         var chatConfig = {
           botOptions: botOptions,
@@ -103,20 +103,20 @@
           graphLib: 'd3',  // set google, to render google charts.This feature requires loader.js file which is available in google charts documentation.
           googleMapsAPIKey: '' // please provide google maps API key to fetch user location.
         };
-    
+
         Object.assign(botOptions, chatBotOptions);
         Object.assign(chatConfig, configOverrides);
     
         var originalAssertionFn = chatConfig.botOptions.assertionFn;
         chatConfig.botOptions.assertionFn = assertionFnWrapper(originalAssertionFn, chatInstance);
-    
+
         if (botOptions.userIdentity === 'PLEASE_ENTER_USER_EMAIL_ID') {
           botOptions.userIdentity = getBotUserIdentity();
         }
-    
+
         return chatConfig;
       }
-    
+
       function attachChatIconUI ($) {
         var bubble = '\
           <div chat="bubble" thinking="nope" visible="nope">\
@@ -135,7 +135,7 @@
             </div>\
           </div>\
         ';
-    
+
         $('body').append(bubble);
       }
 
@@ -149,15 +149,15 @@
 
         $koreChatBody.css({ top: newKoreChatBodyTop + 'px' });
       }
-    
+
       function initializeSession (chatConfig, setChatIconVisibility) {
         var chatSessionActive = isChatSessionActive(RESTORE_P_S, JWT_GRANT);
         var chatMinimized = localStorage.getItem(CHAT_MAXIMIZED) === 'false';
-    
+
         if (!chatSessionActive || chatMinimized) {
           setTimeout(function () { setChatIconVisibility(true) }, 800);
         }
-    
+
         if (chatSessionActive) {
           chatConfig.botOptions.restorePS = true;
           chatConfig.botOptions.jwtGrant = JSON.parse(localStorage.getItem(JWT_GRANT));
@@ -165,11 +165,11 @@
           chatConfig.loadHistory = true;
         }
       }
-    
+
       function bindEventListeners (chatConfig, chatInstance, setChatIconVisibility) {
         var $masterButton = $('[chat=bubble] [chat=master_button]');
         var $bubble = $masterButton.parent();
-    
+
         $masterButton.on('click', function () {
           if (localStorage.getItem(CHAT_MAXIMIZED) === 'false') {
             $('.minimized').trigger('click');
@@ -178,22 +178,22 @@
           } else {
             $bubble.attr('thinking', 'yep');
           }
-    
+
           chatInstance.show(chatConfig);
           chatWindowEventListeners(chatInstance.bot, $bubble, setChatIconVisibility, chatConfig);
         });
-    
+
         if (localStorage.getItem(CHAT_MAXIMIZED) === 'true') {
           $masterButton.trigger('click');
         }
       };
-    
+
       function chatWindowEventListeners(bot, $bubble, setChatIconVisibility, chatConfig) {
         var $koreChatWindow = $('.kore-chat-window');
         var $koreChatHeader = $koreChatWindow.find('.kore-chat-header');
         var $koreChatBody = $koreChatWindow.find('.kore-chat-body');
         var $chatBoxControls = $koreChatHeader.find('.chat-box-controls');
-    
+
         bot.on('rtm_client_initialized', function () {
           bot.RtmClient.on('ws_error', function (event) {
             //where event is web socket's onerror event
@@ -203,20 +203,23 @@
             //where event is web socket's onclose event
           });
         });
-    
+
         // Open event triggers when connection established with bot
-        bot.on('open', function (response) {
-          if (localStorage.getItem(CHAT_MAXIMIZED) === 'true') return;
+        bot.on('open', function (response) { // "open" event fires mulitple times within a single session
+          if (CHAT_WINDOW_OPENED) return;    // hence the need for a CHAT_WINDOW_OPENED flag
+          CHAT_WINDOW_OPENED = true;
 
           localStorage.setItem(CHAT_MAXIMIZED, 'true');
           localStorage.setItem(RESTORE_P_S, 'true');
           localStorage.setItem(JWT_GRANT, JSON.stringify(bot.userInfo));
 
           if (chatConfig.subheader) {
-            attachSubheaderUI (chatConfig.subheader, $koreChatHeader, $koreChatBody);
+            attachSubheaderUI(chatConfig.subheader, $koreChatHeader, $koreChatBody);
           }
 
           $('.close-btn').on('click', function () {
+            CHAT_WINDOW_OPENED = false;
+
             if (localStorage.getItem(LIVE_CHAT) === 'true') {
               var messageToBot = {
                 message: { body: 'endAgentChat' },
@@ -224,7 +227,7 @@
               };
               bot.sendMessage(messageToBot);
             }
-    
+
             localStorage.removeItem(CHAT_MAXIMIZED);
             localStorage.removeItem(BOT_USER_IDENTITY);
             localStorage.removeItem(JWT_GRANT);
@@ -238,16 +241,16 @@
             chatConfig.chatHistory = undefined;
             chatConfig.handleError = undefined;
             chatConfig.loadHistory = false;
-    
+
             setChatIconVisibility(true);
           });
         });
-    
+
         // Event occurs when you recieve any message from server
         bot.on('message', function(msg) {
           // Converting JSON string to object
           var dataObj = JSON.parse(msg.data); 
-    
+
           //differ user message & bot response check message type
           if (dataObj.from === 'bot' && dataObj.type === 'bot_response') {
             // Bot sends a message to you
@@ -255,12 +258,12 @@
               $bubble.attr('thinking', 'nope');
               setChatIconVisibility(false);
             }
-            
+
             $('.listTmplContentChild').off('click').on('click', function (e) {
               if (e.target.className === 'buyBtn') return;
               if (e.target.className === 'listRightContent') return;
               if (e.target.tagName === 'IMG') return;
-              
+
               var $buyBtn = $(this).find('.buyBtn')
               $buyBtn.trigger('click');
             });
@@ -278,7 +281,7 @@
         if (!chatConfig.draggable) {
           $koreChatWindow.draggable('destroy');
         }
-        
+
         $chatBoxControls.children('.minimize-btn').off('click').on('click', function () {
           localStorage.setItem(CHAT_MAXIMIZED, 'false');
           setChatIconVisibility(true);
@@ -293,7 +296,7 @@
               options.handleError = koreBot.showError;
               options.chatHistory = koreBot.chatHistory;
               options.botDetails = koreBot.botDetails;
-    
+
               callback(null, options);
               setTimeout(function () {
                 if (koreBot && koreBot.initToken) {
@@ -303,7 +306,7 @@
             });
         }
       }
-    
+
       function getBotUserIdentity () {
         if (isChatSessionActive(RESTORE_P_S, JWT_GRANT)) {
           return localStorage.getItem(BOT_USER_IDENTITY);
@@ -313,11 +316,11 @@
           return userID;
         }
       }
-    
+
       function isChatSessionActive (RESTORE_P_S, JWT_GRANT) {
         return localStorage.getItem(RESTORE_P_S) && localStorage.getItem(JWT_GRANT) != null;
       }
-    
+
       function getUniqueID () {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
           var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
