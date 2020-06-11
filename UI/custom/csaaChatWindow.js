@@ -7,6 +7,7 @@
   var CHAT_MAXIMIZED = 'csaa_chat_maximized';
   var MESSAGE_COUNTER = 'chatHistoryCount';
   var LIVE_CHAT = 'agentTfrOn';
+  var CHAT_WINDOW_OPENED
 
   function csaaKoreBotChat() {
     var koreJquery;
@@ -137,6 +138,17 @@
     
         $('body').append(bubble);
       }
+
+      function attachSubheaderUI (subheader, $koreChatHeader, $koreChatBody) {
+        var $subheader = $(subheader);
+
+        $subheader.insertAfter($koreChatHeader.first());
+
+        var oldKoreChatBodyTop = $koreChatBody.css('top');
+        var newKoreChatBodyTop = parseFloat(oldKoreChatBodyTop) + $subheader.height();
+
+        $koreChatBody.css({ top: newKoreChatBodyTop + 'px' });
+      }
     
       function initializeSession (chatConfig, setChatIconVisibility) {
         var chatSessionActive = isChatSessionActive(RESTORE_P_S, JWT_GRANT);
@@ -169,7 +181,6 @@
     
           chatInstance.show(chatConfig);
           chatWindowEventListeners(chatInstance.bot, $bubble, setChatIconVisibility, chatConfig);
-          localStorage.setItem(CHAT_MAXIMIZED, 'true');
         });
     
         if (localStorage.getItem(CHAT_MAXIMIZED) === 'true') {
@@ -178,8 +189,10 @@
       };
     
       function chatWindowEventListeners(bot, $bubble, setChatIconVisibility, chatConfig) {
-        var $chatBoxControls = $('.kore-chat-window .kore-chat-header .chat-box-controls');
         var $koreChatWindow = $('.kore-chat-window');
+        var $koreChatHeader = $koreChatWindow.find('.kore-chat-header');
+        var $koreChatBody = $koreChatWindow.find('.kore-chat-body');
+        var $chatBoxControls = $koreChatHeader.find('.chat-box-controls');
     
         bot.on('rtm_client_initialized', function () {
           bot.RtmClient.on('ws_error', function (event) {
@@ -193,8 +206,15 @@
     
         // Open event triggers when connection established with bot
         bot.on('open', function (response) {
+          if (localStorage.getItem(CHAT_MAXIMIZED) === 'true') return;
+
+          localStorage.setItem(CHAT_MAXIMIZED, 'true');
           localStorage.setItem(RESTORE_P_S, 'true');
           localStorage.setItem(JWT_GRANT, JSON.stringify(bot.userInfo));
+
+          if (chatConfig.subheader) {
+            attachSubheaderUI (chatConfig.subheader, $koreChatHeader, $koreChatBody);
+          }
 
           $('.close-btn').on('click', function () {
             if (localStorage.getItem(LIVE_CHAT) === 'true') {
