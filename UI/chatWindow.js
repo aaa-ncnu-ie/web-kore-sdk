@@ -1168,7 +1168,7 @@
                             });*/
                         }
                     } else {
-                        _chatContainer.addClass("minimize");
+                        // _chatContainer.addClass("minimize");
                         if (me.expanded === false && _chatContainer.hasClass("ui-draggable")) {
                             //_chatContainer.draggable("destroy");
                         }

@@ -47,9 +47,9 @@
             if (chatLifeCycle.onWillUnmount) chatLifeCycle.onWillUnmount();
     
             var chatInstance =  originalDestroy.call(this, chatConfig);
-    
+
             if (chatConfig.onUnmount) chatConfig.onUnmount();
-    
+
             return chatInstance;
           };
 
@@ -175,12 +175,13 @@
             $('.minimized').trigger('click');
             $bubble.attr('thinking', 'nope');
             setChatIconVisibility(false);
+            $('.kore-chat-window').addClass('slide');
           } else {
             $bubble.attr('thinking', 'yep');
           }
 
           chatInstance.show(chatConfig);
-          chatWindowEventListeners(chatInstance.bot, $bubble, setChatIconVisibility, chatConfig);
+          chatWindowEventListeners(chatInstance, $bubble, setChatIconVisibility, chatConfig);
         });
 
         if (localStorage.getItem(CHAT_MAXIMIZED) === 'true') {
@@ -188,7 +189,8 @@
         }
       };
 
-      function chatWindowEventListeners(bot, $bubble, setChatIconVisibility, chatConfig) {
+      function chatWindowEventListeners(chatInstance, $bubble, setChatIconVisibility, chatConfig) {
+        var bot = chatInstance.bot;
         var $koreChatWindow = $('.kore-chat-window');
         var $koreChatHeader = $koreChatWindow.find('.kore-chat-header');
         var $koreChatBody = $koreChatWindow.find('.kore-chat-body');
@@ -217,7 +219,8 @@
             attachSubheaderUI(chatConfig.subheader, $koreChatHeader, $koreChatBody);
           }
 
-          $('.close-btn').on('click', function () {
+          $('.close-btn').on('click', function (e) {
+            e.stopPropagation();
             CHAT_WINDOW_OPENED = false;
 
             if (localStorage.getItem(LIVE_CHAT) === 'true') {
@@ -242,7 +245,11 @@
             chatConfig.handleError = undefined;
             chatConfig.loadHistory = false;
 
-            setChatIconVisibility(true);
+            $koreChatWindow.removeClass('slide');
+            setTimeout(function () {
+              setChatIconVisibility(true);
+              chatInstance.destroy();
+            }, 800);
           });
         });
 
@@ -257,6 +264,7 @@
             if ($bubble.attr('thinking') === 'yep') {
               $bubble.attr('thinking', 'nope');
               setChatIconVisibility(false);
+              $koreChatWindow.addClass('slide');
             }
 
             $('.listTmplContentChild').off('click').on('click', function (e) {
@@ -278,12 +286,13 @@
           }
         });
 
-        if (!chatConfig.draggable) {
+        if (!chatConfig.draggable && $koreChatWindow.data('ui-draggable')) {
           $koreChatWindow.draggable('destroy');
         }
 
         $chatBoxControls.children('.minimize-btn').off('click').on('click', function () {
           localStorage.setItem(CHAT_MAXIMIZED, 'false');
+          $koreChatWindow.removeClass('slide');
           setChatIconVisibility(true);
         });
       }

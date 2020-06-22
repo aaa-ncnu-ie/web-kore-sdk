@@ -136,6 +136,14 @@
   cursor: pointer;
 }
 
+.kore-chat-window {
+  bottom: -100%;
+  transition: bottom 0.8s ease;
+}
+
+.kore-chat-window.slide {
+  bottom: 10px;
+}
 
 
 [chat=bubble] {
