@@ -8,6 +8,7 @@
   var MESSAGE_COUNTER = 'chatHistoryCount';
   var LIVE_CHAT = 'agentTfrOn';
   var CHAT_WINDOW_OPENED = false;
+  var QUEUED_MESSAGE_COUNT = 'csaa_queued_message_count';
 
   function csaaKoreBotChat() {
     var koreJquery;
@@ -34,18 +35,18 @@
           var originalShow = chatInstance.show;
           var wrapperShow = function () {
             if (chatLifeCycle.onWillMount) chatLifeCycle.onWillMount();
-    
+
             var chatInstance = originalShow.call(this, chatConfig);
-    
+
             if (chatConfig.onMount) chatConfig.onMount();
-    
+
             return chatInstance;
           }
 
           var originalDestroy = chatInstance.destroy
           var wrapperDestroy = function () {
             if (chatLifeCycle.onWillUnmount) chatLifeCycle.onWillUnmount();
-    
+
             var chatInstance =  originalDestroy.call(this, chatConfig);
 
             if (chatConfig.onUnmount) chatConfig.onUnmount();
@@ -139,6 +140,29 @@
         $('body').append(bubble);
       }
 
+      function attachNotificationMessage (message, $notifications) {
+        var notificationMsg = '\
+          <div chat="message">\
+            <div message="header">\
+              <div message="subject" style="color: rgb(23, 120, 211);">New message</div>\
+                <div action="close">\
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M7.41 7.84L12 12.42l4.59-4.58L18 9.25l-6 6-6-6z"></path><path d="M0-.75h24v24H0z" fill="none"></path></svg>\
+                </div>\
+              </div>\
+            <div message="body">\
+              <p>' + message + '</p>\
+            </div>\
+          </div>\
+        ';
+
+        $notifications.children().append(notificationMsg);
+        $notifications.addClass('slide');
+        $('[action=close]').on('click', function () {
+          $notifications.removeClass('slide');
+          $notifications.removeAttr('queued_messages');
+        });
+      }
+
       function attachSubheaderUI (subheader, $koreChatHeader, $koreChatBody) {
         var $subheader = $(subheader);
 
@@ -167,30 +191,50 @@
       }
 
       function bindEventListeners (chatConfig, chatInstance, setChatIconVisibility) {
-        var $masterButton = $('[chat=bubble] [chat=master_button]');
-        var $bubble = $masterButton.parent();
+        var $bubble = $('[chat=bubble]');
+        var $masterButton = $bubble.children('[chat=master_button]');
+        var $notifications = $bubble.children('[chat=notifications]');
+        var queuedMessageCount = localStorage.getItem(QUEUED_MESSAGE_COUNT);
 
         $masterButton.on('click', function () {
           if (localStorage.getItem(CHAT_MAXIMIZED) === 'false') {
             $('.minimized').trigger('click');
-            $bubble.attr('thinking', 'nope');
-            setChatIconVisibility(false);
-            $('.kore-chat-window').addClass('slide');
-          } else {
-            $bubble.attr('thinking', 'yep');
           }
+          
+          $bubble.attr('thinking', 'yep');
+          $masterButton.removeAttr('queued_messages');
+          $notifications.removeAttr('queued_messages');
+          localStorage.removeItem(QUEUED_MESSAGE_COUNT);
 
           chatInstance.show(chatConfig);
-          chatWindowEventListeners(chatInstance, $bubble, setChatIconVisibility, chatConfig);
+          chatWindowEventListeners(
+            chatInstance,
+            {
+              $bubble: $bubble,
+              $masterButton: $masterButton,
+              $notifications: $notifications
+            },
+            setChatIconVisibility,
+            chatConfig
+          );
         });
 
         if (localStorage.getItem(CHAT_MAXIMIZED) === 'true') {
           $masterButton.trigger('click');
         }
+
+        if (queuedMessageCount) {
+          $masterButton.attr('queued_messages', queuedMessageCount);
+        }
       };
 
-      function chatWindowEventListeners(chatInstance, $bubble, setChatIconVisibility, chatConfig) {
+      function chatWindowEventListeners(chatInstance, bubble, setChatIconVisibility, chatConfig) {
         var bot = chatInstance.bot;
+
+        var $bubble = bubble.$bubble;
+        var $masterButton = bubble.$masterButton;
+        var $notifications = bubble.$notifications;
+
         var $koreChatWindow = $('.kore-chat-window');
         var $koreChatHeader = $koreChatWindow.find('.kore-chat-header');
         var $koreChatBody = $koreChatWindow.find('.kore-chat-body');
@@ -204,6 +248,13 @@
           bot.RtmClient.on('ws_close', function (event) {
             //where event is web socket's onclose event
           });
+        });
+
+        //applicable only if botOptions.loadHistory = true;
+        bot.on('history', function (historyRes) {
+          $bubble.attr('thinking', 'nope');
+          setChatIconVisibility(false);
+          $koreChatWindow.addClass('slide');
         });
 
         // Open event triggers when connection established with bot
@@ -237,6 +288,7 @@
             localStorage.removeItem(RESTORE_P_S);
             localStorage.removeItem(MESSAGE_COUNTER);
             localStorage.removeItem(LIVE_CHAT);
+            localStorage.removeItem(QUEUED_MESSAGE_COUNT);
 
             chatConfig.botOptions.userIdentity = getBotUserIdentity();
             chatConfig.botOptions.chatHistory = undefined;
@@ -282,6 +334,20 @@
 
             if (dataObj.message[0].component.payload.text === 'Live Agent Chat has ended.') {
               localStorage.setItem(LIVE_CHAT, 'false');
+            }
+
+            if (localStorage.getItem(LIVE_CHAT) === 'true') {
+              if (chatConfig.notificaitonsEnabled && localStorage.getItem(CHAT_MAXIMIZED) === 'false') {
+                var currentQueuedMessages = $masterButton.attr('queued_messages') || 0;
+                var queuedMessages = parseInt(currentQueuedMessages) + 1;
+
+                $masterButton.attr('queued_messages', queuedMessages);
+                $notifications.attr('queued_messages', queuedMessages);
+
+                localStorage.setItem(QUEUED_MESSAGE_COUNT, queuedMessages);
+
+                attachNotificationMessage(dataObj.message[0].component.payload.text, $notifications);
+              }
             }
           }
         });
