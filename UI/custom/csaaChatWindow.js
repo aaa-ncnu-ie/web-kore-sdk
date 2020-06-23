@@ -291,6 +291,8 @@
             localStorage.removeItem(QUEUED_MESSAGE_COUNT);
 
             chatConfig.botOptions.userIdentity = getBotUserIdentity();
+            chatConfig.botOptions.jwtGrant = undefined;
+            chatConfig.botOptions.restorePS = undefined;
             chatConfig.botOptions.chatHistory = undefined;
 
             chatConfig.chatHistory = undefined;
