@@ -136,6 +136,23 @@
   cursor: pointer;
 }
 
+.kore-chat-window {
+  bottom: -100% !important;
+  transition: bottom 0.8s ease;
+}
+
+.kore-chat-window.slide {
+  bottom: 10px !important;
+}
+
+@media(max-width: 767px) {
+  .kore-chat-window {
+    left: 0px !important;
+    right: 0px!important;
+    top: initial !important;
+    height: 100% !important;
+  }
+}
 
 
 [chat=bubble] {
@@ -146,7 +163,6 @@
     height: 55px;
     font-family: Roboto, sans-serif;
     font-weight: 400;
-    z-index: 1500;
   }
   [chat=bubble] * {
     margin: 0;
@@ -272,7 +288,6 @@
     width: 100%;
     position: absolute;
     bottom: 0px;
-    transform: translateY(350px) rotateX(-35deg);
     opacity: 1;
   }
   [chat=bubble] [chat=notifications] > div [chat=message][visible] {
@@ -421,140 +436,3 @@
   .em-spock-hand.em-svg {
     background: url("https://twemoji.maxcdn.com/2/72x72/1f596.png");
   }
-  
-
-
-
-
-
-
-/* .kore-chat-window .kore-chat-header {
-    border-bottom: 1px solid #eee;
-    color: white;
-    font-size: 16px;
-    height: 52px;
-    width: calc(100% + 2px);
-    display: flex;
-    background: #1778d3;
-    margin: -1px 0 52px -1px;
-    position: relative;
-    z-index: 20;
-    border-radius: 4px 4px 0 0;
-    flex: initial;
-    padding: @unset;
-}
-
-.kore-chat-window .kore-chat-header .chat-box-controls {
-    margin-top: 0;
-    flex: initial;
-    display: flex;
-    z-index: 10;
-    position: relative;
-    width: calc(48px * 2);
-    justify-content: flex-end;
-    float: none;
-    left: @unset;
-    right: @unset;
-    padding-top: @unset;
-    color: #fff;
-    border-radius: 0 4px 0 0;
-}
-
-.kore-chat-window .kore-chat-header .chat-box-controls .reload-btn i {
-    margin-top: 0;
-    background-size: 16px 16px;
-    display: inline-block;
-    font-size: 18px;
-    background-repeat: no-repeat
-}
-
-.kore-chat-window .kore-chat-header .chat-box-controls .expand-btn span {
-    margin-top: 3px;
-    background-size: 16px 16px;
-    display: inline-block;
-    width: 16px;
-    height: 18px;
-    background-repeat: no-repeat;
-    font-size: 16px
-}
-
-.kore-chat-window .kore-chat-header .chat-box-controls button {
-    transition-duration: .1s;
-    color: #fff;
-    display: none;
-}
-
-.kore-chat-window .kore-chat-header .chat-box-controls button:hover {
-    background: #f7f7f7;
-    color: #1778d3;
-    border: 1px solid #1778d3;
-    border-left: 0px none;
-}
-
-.kore-chat-window .kore-chat-header .chat-box-controls button:active {
-    opacity: .8;
-}
-
-.kore-chat-window .kore-chat-header .chat-box-controls button.minimize-btn,
-.kore-chat-window .kore-chat-header .chat-box-controls button.close-btn {
-    display: flex;
-}
-
-.kore-chat-window .kore-chat-header .chat-box-controls button:last-child:hover {
-    border-radius: 0px 4px 0 0;
-}
-
-.kore-chat-window .kore-chat-header .security-title {
-    color: #333;
-    background: #fff;
-    padding: 0 20px;
-    line-height: 16px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    bottom: -52px;
-    top: @unset;
-    left: 0;
-    width: 100%;
-    border-bottom: 1px dotted rgba(0, 0, 0, .2);
-    font-size: 12px;
-    box-shadow: 0px 1px 17px 1px rgba(0, 0, 0, .1)
-}
-
-.kore-chat-window .kore-chat-header button {
-    cursor: pointer;
-    background: 0 0;
-    border: none;
-    opacity: 1;
-    display: flex;
-    flex: 1;
-    height: 100%;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 0px;
-    margin: 0px;
-    outline: none;
-}
-
-.kore-chat-window .kore-chat-header button.chat-close {
-    font-size: 20px;
-}
-
-.kore-chat-window .kore-chat-header .header-title.ui-draggable-handle {
-    cursor: move
-}
-
-.kore-chat-window .kore-chat-header .header-title {
-    white-space: nowrap;
-    display: block;
-    align-items: center;
-    flex: 1;
-    text-overflow: ellipsis;
-    justify-content: flex-start;
-    text-align: left;
-    padding: 0 20px;
-    overflow: hidden;
-    line-height: 52px;
-    height: 100%;
-} */
