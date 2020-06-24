@@ -140,7 +140,7 @@
         $('body').append(bubble);
       }
 
-      function attachNotificationMessage (message, $notifications) {
+      function attachNotificationMessageUI (message, $notifications) {
         var notificationMsg = '\
           <div chat="message">\
             <div message="header">\
@@ -155,17 +155,13 @@
           </div>\
         ';
 
-        $notifications.children().append(notificationMsg);
+        $notifications.children().html(notificationMsg);
         $notifications.addClass('slide');
-        $('[action=close]').on('click', function () {
-          $notifications.removeClass('slide');
-          $notifications.removeAttr('queued_messages');
-        });
       }
 
       function attachSubheaderUI (subheader, $koreChatHeader, $koreChatBody) {
         var $subheader = $(subheader);
-
+        $subheader.addClass('kore-chat-subheader');
         $subheader.insertAfter($koreChatHeader.first());
 
         var oldKoreChatBodyTop = $koreChatBody.css('top');
@@ -196,16 +192,7 @@
         var $notifications = $bubble.children('[chat=notifications]');
         var queuedMessageCount = localStorage.getItem(QUEUED_MESSAGE_COUNT);
 
-        $masterButton.on('click', function () {
-          if (localStorage.getItem(CHAT_MAXIMIZED) === 'false') {
-            $('.minimized').trigger('click');
-          }
-          
-          $bubble.attr('thinking', 'yep');
-          $masterButton.removeAttr('queued_messages');
-          $notifications.removeAttr('queued_messages');
-          localStorage.removeItem(QUEUED_MESSAGE_COUNT);
-
+        function renderChat () {
           chatInstance.show(chatConfig);
           chatWindowEventListeners(
             chatInstance,
@@ -217,6 +204,23 @@
             setChatIconVisibility,
             chatConfig
           );
+        }
+
+        $masterButton.on('click', function () {
+          if (localStorage.getItem(CHAT_MAXIMIZED) === 'false') {
+            $('.minimized').trigger('click');
+            setChatIconVisibility(false);
+            $('.kore-chat-window').addClass('slide');
+
+            if (!CHAT_WINDOW_OPENED) renderChat();
+          } else {
+            $bubble.attr('thinking', 'yep');
+            renderChat();
+          }
+
+          $masterButton.removeAttr('queued_messages');
+          $notifications.removeAttr('queued_messages');
+          localStorage.removeItem(QUEUED_MESSAGE_COUNT);
         });
 
         if (localStorage.getItem(CHAT_MAXIMIZED) === 'true') {
@@ -340,6 +344,10 @@
 
             if (localStorage.getItem(LIVE_CHAT) === 'true') {
               if (chatConfig.notificaitonsEnabled && localStorage.getItem(CHAT_MAXIMIZED) === 'false') {
+                var msgText = dataObj.message[0].component.payload.text;
+
+                if (['XX', 'AR', 'AT', 'AST', 'ack', 'pong', 'ping'].indexOf(msgText) !== -1) return;
+
                 var currentQueuedMessages = $masterButton.attr('queued_messages') || 0;
                 var queuedMessages = parseInt(currentQueuedMessages) + 1;
 
@@ -348,7 +356,8 @@
 
                 localStorage.setItem(QUEUED_MESSAGE_COUNT, queuedMessages);
 
-                attachNotificationMessage(dataObj.message[0].component.payload.text, $notifications);
+                attachNotificationMessageUI(msgText, $notifications);
+                bindNotificationMessageEventListeners($notifications);
               }
             }
           }
@@ -359,12 +368,20 @@
         }
 
         $chatBoxControls.children('.minimize-btn').off('click').on('click', function () {
+          console.log('.minimize');
           localStorage.setItem(CHAT_MAXIMIZED, 'false');
           $koreChatWindow.removeClass('slide');
           setChatIconVisibility(true);
         });
       }
-    
+
+      function bindNotificationMessageEventListeners ($notifications) {
+        $('[action=close]').on('click', function () {
+          $notifications.removeClass('slide');
+          $notifications.removeAttr('queued_messages');
+        });
+      }
+
       function assertionFnWrapper (originalAssertionFn, koreBot) {
         return function (options, callback) {
           originalAssertionFn()
