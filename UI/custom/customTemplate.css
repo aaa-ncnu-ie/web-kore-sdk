@@ -137,12 +137,21 @@
 }
 
 .kore-chat-window {
-  bottom: -100%;
+  bottom: -100% !important;
   transition: bottom 0.8s ease;
 }
 
 .kore-chat-window.slide {
-  bottom: 10px;
+  bottom: 10px !important;
+}
+
+@media(max-width: 767px) {
+  .kore-chat-window {
+    left: 0px !important;
+    right: 0px!important;
+    top: initial !important;
+    height: 100% !important;
+  }
 }
 
 
