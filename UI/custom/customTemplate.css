@@ -152,6 +152,10 @@
     top: initial !important;
     height: 100% !important;
   }
+
+  .kore-chat-window.slide {
+    bottom: 0px !important;
+  }
 }
 
 .kore-chat-window .kore-chat-body {
