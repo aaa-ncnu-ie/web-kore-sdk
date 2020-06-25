@@ -1138,6 +1138,9 @@
                             _parentQuikReplyEle.parentElement.removeChild(_parentQuikReplyEle);
                         }, 50);
                     }
+                    if (e.currentTarget.classList && e.currentTarget.classList.length > 0 && e.currentTarget.classList[0] === 'buyBtn') {
+                        $(".hidingListTemplateValues").hide();
+                    }
                     setTimeout(function () {
                         var _chatInput = _chatContainer.find('.kore-chat-footer .chatInputBox');
                         _chatInput.focus();
@@ -2128,6 +2131,19 @@
                         });
                     }
                 }
+
+                if (
+                    msgData.message &&
+                    msgData.message[0] &&
+                    msgData.message[0].component &&
+                    msgData.message[0].component.payload &&
+                    msgData.message[0].component.payload.template_type === 'list'
+                  )  {
+                    console.log(msgData);
+                    console.log(messageHtml);
+                    messageHtml.find(".hidingListTemplateValues").hide();
+                  };
+
                 _chatContainer.append(messageHtml);
                 handleImagePreview();
 
@@ -2973,6 +2989,9 @@
                                             msgData.message[0].component.selectedValue=res[1].messages[index+1].message[0].cInfo.body;                                    
                                         }
                                         if (msgData.message[0].component.payload.template_type === 'multi_select') {
+                                            msgData.message[0].component.payload.fromHistory = true;
+                                        }
+                                        if (msgData.message[0].component.payload.template_type === 'list') {
                                             msgData.message[0].component.payload.fromHistory = true;
                                         }
                                         if(msgData.message[0].component && msgData.message[0].component.payload && (msgData.message[0].component.payload.videoUrl || msgData.message[0].component.payload.audioUrl)){
