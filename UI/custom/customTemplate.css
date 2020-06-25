@@ -154,6 +154,44 @@
   }
 }
 
+.kore-chat-window .kore-chat-body {
+  background-color: white;
+}
+
+.kore-chat-window ul.chat-container li .extra-info {
+  color: #8a959f
+}
+
+.kore-chat-window ul.chat-container li.fromCurrentUser .messageBubble {
+  color: white;
+}
+
+.kore-chat-window .buttonTmplContent .buttonTmplContentBox,
+.kore-chat-window .listTmplContent .listTmplContentBox {
+  border: 1px solid #f2f3f5;
+}
+
+.kore-chat-window .buttonTmplContent .buttonTmplContentChild,
+.kore-chat-window .listTmplContent .listTmplContentChild {
+  border-top: 1px solid #f2f3f5;
+}
+
+/* IE issues */
+
+@media screen and (-ms-high-contrast: active),
+(-ms-high-contrast: none) {
+    /* .kore-chat-window .kore-chat-body ul.chat-container {
+        bottom: 15px;
+    } */
+    .kore-chat-window .kore-chat-header {
+        z-index: auto;
+        position: static;
+    }
+}
+
+
+/* IE issues css ends here */
+
 
 [chat=bubble] {
     position: fixed;
@@ -198,12 +236,6 @@
       transform: rotate(270deg);
     }
   }
-  [chat=bubble][thinking=yep] [chat=master_button] [chat=icon] svg .path {
-    stroke-dasharray: 187;
-    stroke-dashoffset: 0;
-    transform-origin: center;
-    animation: dash 3s ease-in-out infinite, colors 12s ease-in-out infinite;
-  }
   @keyframes colors {
     0% {
       stroke: #ffffff;
@@ -237,6 +269,12 @@
       stroke-dashoffset: 187;
       transform: rotate(450deg) scale(0.4);
     }
+  }
+  [chat=bubble][thinking=yep] [chat=master_button] [chat=icon] svg .path {
+    stroke-dasharray: 187;
+    stroke-dashoffset: 0;
+    transform-origin: center;
+    animation: dash 3s ease-in-out infinite, colors 12s ease-in-out infinite;
   }
   [chat=bubble][thinking=yep] [chat=master_button]:before {
     transform: translateX(-15px) translateY(24px) scale(0.3);
