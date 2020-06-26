@@ -2137,10 +2137,9 @@
                     msgData.message[0] &&
                     msgData.message[0].component &&
                     msgData.message[0].component.payload &&
-                    msgData.message[0].component.payload.template_type === 'list'
+                    msgData.message[0].component.payload.template_type === 'list' &&
+                    msgData.message[0].component.payload.fromHistory === true
                   )  {
-                    console.log(msgData);
-                    console.log(messageHtml);
                     messageHtml.find(".hidingListTemplateValues").hide();
                   };
 
