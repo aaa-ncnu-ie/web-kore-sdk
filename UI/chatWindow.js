@@ -1297,6 +1297,9 @@
                             _parentQuikReplyEle.parentElement.removeChild(_parentQuikReplyEle);
                         }, 50);
                     }
+                    if (e.currentTarget.classList && e.currentTarget.classList.length > 0 && e.currentTarget.classList[0] === 'buyBtn') {
+                        $(".hidingListTemplateValues").hide();
+                    }
                     setTimeout(function () {
                         var _chatInput = _chatContainer.find('.kore-chat-footer .chatInputBox');
                         _chatInput.focus();
@@ -2309,6 +2312,17 @@
                 if(msgData && msgData.message[0] && msgData.message[0].component && msgData.message[0].component.payload && msgData.message[0].component.payload.sliderView && !msgData.message[0].component.payload.fromHistory){
                     bottomSliderAction('show',messageHtml);
                 }else{
+                    if (
+                        msgData.message &&
+                        msgData.message[0] &&
+                        msgData.message[0].component &&
+                        msgData.message[0].component.payload &&
+                        msgData.message[0].component.payload.template_type === 'list' &&
+                        msgData.message[0].component.payload.fromHistory === true
+                    )  {
+                        messageHtml.find(".hidingListTemplateValues").hide();
+                    };
+
                 _chatContainer.append(messageHtml);
                 }
                 handleImagePreview();
@@ -3230,6 +3244,9 @@
                                         if (msgData.message[0].component.payload.template_type === 'feedbackTemplate') {
                                             msgData.message[0].component.payload.fromHistory = true;
                                             msgData.message[0].cInfo.body="Rate this chat session";
+                                        }
+                                        if (msgData.message[0].component.payload.template_type === 'list') {
+                                            msgData.message[0].component.payload.fromHistory = true;
                                         }
                                         if(msgData.message[0].component && msgData.message[0].component.payload && (msgData.message[0].component.payload.videoUrl || msgData.message[0].component.payload.audioUrl)){
                                             msgData.message[0].cInfo.body = "";
