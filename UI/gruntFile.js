@@ -96,7 +96,7 @@ module.exports = function (grunt) {
         cssFiles=[
             'libs/jquery-ui.min.css',
             'libs/emojione.sprites.css',
-            '../libs/purejscarousel.css',
+            // '../libs/purejscarousel.css',
             'chatWindow.css',
             'custom/customTemplate.css'
         ]
