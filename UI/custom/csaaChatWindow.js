@@ -1,20 +1,32 @@
 (function (factory) {
   window.csaaKoreBotChat = factory();
 })(function () {
-  var JWT_GRANT = 'jwtGrant';
-  var BOT_USER_IDENTITY = 'csaa_chat_unique_id';
-  var CHAT_WINDOW_STATUS = 'csaa_chat_maximized';
-  var MESSAGE_COUNTER = 'chatHistoryCount';
-  var LIVE_CHAT = 'agentTfrOn';
-  var QUEUED_MESSAGE_COUNT = 'csaa_queued_message_count';
+
+  // Local storage entries
+  var JWT_GRANT               = 'jwtGrant';
+  var BOT_USER_IDENTITY       = 'csaa_chat_unique_id';
+  var CHAT_WINDOW_STATUS      = 'csaa_chat_maximized';
+  var MESSAGE_COUNTER         = 'chatHistoryCount';
+  var LIVE_CHAT               = 'agentTfrOn';
+  var QUEUED_MESSAGE_COUNT    = 'csaa_queued_message_count';
+
+  // Chat events
+  var CHAT_STARTED            = 'CHAT_STARTED';
+  var CHAT_MINIMIZED          = 'CHAT_MINIMIZED';
+  var CHAT_MAXIMIZED          = 'CHAT_MAXIMIZED';
+  var CHAT_CUSTOMER_ENGAGED   = 'CHAT_CUSTOMER_ENGAGED';
+  var CHAT_AGENT_ENGAGED      = 'CHAT_AGENT_ENGAGED';
+  var CHAT_AGENT_DISCONNECTED = 'CHAT_AGENT_DISCONNECTED';
+  var CHAT_ENDED_USER         = 'CHAT_ENDED_USER';
+  var CHAT_ENDED_AGENT        = 'CHAT_ENDED_AGENT';
+  var CHAT_SURVEY_TRIGGERED   = 'CHAT_SURVEY_TRIGGERED';
+  var CHAT_SURVEY_ANSWERED    = 'CHAT_SURVEY_ANSWERED';
 
   function csaaKoreBotChat() {
 
     var koreJquery;
     var chatConfig;
     var chatInstance;
-    var botOptions;
-    var configOverrides;
     var chatLifeCycle;
 
     if (window && window.KoreSDK && window.KoreSDK.dependencies && window.KoreSDK.dependencies.jQuery) {
@@ -32,30 +44,16 @@
 
       function init () {
 
-        return function (botOptionsObj, configOverridesObj, chatLifeCycleObj) {
+        return function (botOptions, configOverrides, chatLifeCycleObj) {
 
           // Chat Check
           if (chatLifeCycle && chatLifeCycle.isChatEnabled && !chatLifeCycle.isChatEnabled()) {
-            publishEvent('CHAT_NOT_ENABLED');
             return;
-          } else {
-            publishEvent('CHAT_ENABLED');
           }
 
           // Set Data
-          botOptions = botOptionsObj;
-          configOverrides = configOverridesObj;
           chatLifeCycle = chatLifeCycleObj;
-          chatConfig = getChatConfig();
-
-          // Handle Chat End
-          var originalDestroy = chatInstance.destroy
-          var wrapperDestroy = function () {
-            handleChatEnd();
-            var chatInstance = originalDestroy.call(this, chatConfig);
-            return chatInstance;
-          };
-          chatInstance.destroy = wrapperDestroy;
+          chatConfig = getChatConfig(botOptions, configOverrides);
 
           // Chat Icon
           attachChatIconUI($);
@@ -68,7 +66,7 @@
         };
       }
 
-      function getChatConfig () {
+      function getChatConfig (chatBotOptions, configOverrides) {
         //Define the bot options
         var botOptions = {};
         botOptions.koreAPIUrl = 'https://bots.kore.ai/api/';
@@ -78,8 +76,8 @@
         botOptions.koreAnonymousFn = koreAnonymousFn;
         botOptions.botInfo = {'name':'Bot Name', '_id' :'Bot Id'};  //Capture Bot Name & Bot ID from Builder Tool app. Go to respective Bot and then navigate to Settings-->Config Settings-->General settings section. Bot Name is case sensitive.
         // botOptions.JWTUrl = 'PLEASE_ENTER_JWTURL_HERE';//above assertion function  picks url from here
-        botOptions.userIdentity = 'PLEASE_ENTER_USER_EMAIL_ID';// Provide users email id here
-        botOptions.clientId = 'PLEASE_ENTER_CLIENT_ID'; // issued by the kore.ai on client app registration.
+        botOptions.userIdentity = '';// Provide users email id here
+        botOptions.clientId = ''; // issued by the kore.ai on client app registration.
         // botOptions.clientSecret = 'PLEASE_ENTER_CLIENT_SECRET';// issued by the kore.ai on client app registration.
 
         // Assign Bot options to chatWindow config
@@ -105,7 +103,7 @@
         var originalAssertionFn = chatConfig.botOptions.assertionFn;
         chatConfig.botOptions.assertionFn = assertionFnWrapper(originalAssertionFn, chatInstance);
 
-        if (botOptions.userIdentity === 'PLEASE_ENTER_USER_EMAIL_ID') {
+        if (botOptions.userIdentity === '') {
           botOptions.userIdentity = getBotUserIdentity();
         }
 
@@ -177,7 +175,6 @@
           chatConfig.loadHistory = true;
 
           if (isChatWindowMinimized()) {
-
             // Continue chat in minimized state
             setTimeout(function () { showChatIcon(true) }, 800);
             var queuedMessageCount = localStorage.getItem(QUEUED_MESSAGE_COUNT);
@@ -210,14 +207,13 @@
 
             $('.kore-chat-window').addClass('slide');
             renderChat();
-            publishEvent('CHAT_MAXIMIZED');
+            publishEvent(CHAT_MAXIMIZED);
 
           } else {
 
             // Check whether a new chat session is allowed
 
             if (chatLifeCycle && chatLifeCycle.isChatSessionEnabled && !chatLifeCycle.isChatSessionEnabled()) {
-              publishEvent('CHAT_NEW_SESSION_NOT_ALLOWED');
               return;
             }
 
@@ -226,7 +222,7 @@
             showChatIcon(false);
             $bubble.attr('thinking', 'yep');
             renderChat();
-            publishEvent('CHAT_INITIATING_NEW_SESSION');
+            publishEvent(CHAT_STARTED);
           }
 
           localStorage.setItem(CHAT_WINDOW_STATUS, 'maximized');
@@ -302,22 +298,34 @@
               $buyBtn.trigger('click');
             });
 
-            if (dataObj.message[0].component.payload.text === 'You are now connected to an Agent.') {
+            var msgText = dataObj.message[0].component.payload.text;
+
+            if (msgText === 'You are now connected to an Agent.') {
               localStorage.setItem(LIVE_CHAT, 'true');
+              publishEvent(CHAT_AGENT_ENGAGED);
             }
 
-            if (dataObj.message[0].component.payload.text === 'Live Agent Chat has ended.') {
+            if (msgText === 'Live Agent Chat has ended.') {
               localStorage.setItem(LIVE_CHAT, 'false');
+              publishEvent(CHAT_AGENT_DISCONNECTED);
             }
 
-            if (dataObj.message[0].component.payload.text === 'Thank you. The chat session has ended.'
-              || dataObj.message[0].component.payload.text === 'Thank you for your feedback. The chat session has ended.') {
+            if (msgText === 'Do you want to provide feedback?') {
+              localStorage.setItem(LIVE_CHAT, 'false');
+              publishEvent(CHAT_SURVEY_TRIGGERED);
+            }
+
+            if (msgText.includes('0-10 scale, 0=very dissatisfied, 10=very satisfied')) {
+              publishEvent(CHAT_SURVEY_ANSWERED);
+            }
+
+            if (msgText === 'Thank you. The chat session has ended.'
+              || msgText === 'Thank you for your feedback. The chat session has ended.') {
               handleChatEndByAgent();
             }
 
             if (localStorage.getItem(LIVE_CHAT) === 'true') {
               if (chatConfig.notificaitonsEnabled && localStorage.getItem(CHAT_WINDOW_STATUS) === 'minimized') {
-                var msgText = dataObj.message[0].component.payload.text;
 
                 if (['XX', 'AR', 'AT', 'AST', 'ack', 'pong', 'ping'].indexOf(msgText) !== -1) return;
 
@@ -341,7 +349,7 @@
         }
 
         $chatBoxControls.children('.minimize-btn').off('click').on('click', function () {
-          publishEvent('CHAT_MINIMIZED');
+          publishEvent(CHAT_MINIMIZED);
           localStorage.setItem(CHAT_WINDOW_STATUS, 'minimized');
           $koreChatWindow.removeClass('slide');
           showChatIcon(true);
@@ -419,12 +427,12 @@
           };
           chatInstance.bot.sendMessage(messageToBot);
         }
-        publishEvent('CHAT_ENDED_USER');
+        publishEvent(CHAT_ENDED_USER);
         handleChatEnd();
       }
 
       function handleChatEndByAgent() {
-        publishEvent('CHAT_ENDED_AGENT');
+        publishEvent(CHAT_ENDED_AGENT);
         handleChatEnd();
       }
 
