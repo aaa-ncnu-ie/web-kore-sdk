@@ -44,16 +44,16 @@
 
       function init () {
 
-        return function (botOptions, configOverrides, chatLifeCycleObj) {
+        return function (defaultChatConfig, chatLifeCycleObj) {
 
           // Chat Check
-          if (chatLifeCycle && chatLifeCycle.isChatEnabled && !chatLifeCycle.isChatEnabled()) {
+          if (chatLifeCycleObj && chatLifeCycleObj.isChatEnabled && !chatLifeCycleObj.isChatEnabled()) {
             return;
           }
 
           // Set Data
           chatLifeCycle = chatLifeCycleObj;
-          chatConfig = getChatConfig(botOptions, configOverrides);
+          chatConfig = getChatConfig(defaultChatConfig);
 
           // Chat Icon
           attachChatIconUI($);
@@ -66,9 +66,10 @@
         };
       }
 
-      function getChatConfig (chatBotOptions, configOverrides) {
+      function getChatConfig (defaultChatConfig) {
         //Define the bot options
-        var botOptions = {};
+        var botOptions = {
+        };
         botOptions.koreAPIUrl = 'https://bots.kore.ai/api/';
         botOptions.koreSpeechAPIUrl = ''; // This option is deprecated
         botOptions.ttsSocketUrl = ''; // This option is deprecated
@@ -82,7 +83,7 @@
 
         // Assign Bot options to chatWindow config
         var chatConfig = {
-          botOptions: botOptions,
+          botOptions: {},
           allowIframe: false, // set true, opens authentication links in popup window, default value is "false"
           isSendButton: false, // set true, to show send button below the compose bar
           isTTSEnabled: true, // set false, to hide speaker icon
@@ -97,14 +98,15 @@
           googleMapsAPIKey: '' // please provide google maps API key to fetch user location.
         };
 
-        Object.assign(botOptions, chatBotOptions);
-        Object.assign(chatConfig, configOverrides);
+        var newBotOptions = Object.assign(botOptions, defaultChatConfig.botOptions);
 
-        var originalAssertionFn = chatConfig.botOptions.assertionFn;
-        chatConfig.botOptions.assertionFn = assertionFnWrapper(originalAssertionFn, chatInstance);
+        Object.assign(chatConfig, defaultChatConfig);
+        chatConfig.botOptions = newBotOptions;
 
-        if (botOptions.userIdentity === '') {
-          botOptions.userIdentity = getBotUserIdentity();
+        chatConfig.botOptions.assertionFn = assertionFnWrapper(chatConfig.botOptions.assertionFn, chatInstance);
+
+        if (chatConfig.botOptions.userIdentity === '') {
+          chatConfig.botOptions.userIdentity = getBotUserIdentity();
         }
 
         return chatConfig;
@@ -371,7 +373,6 @@
               options.handleError = koreBot.showError;
               options.chatHistory = koreBot.chatHistory;
               options.botDetails = koreBot.botDetails;
-
               callback(null, options);
               setTimeout(function () {
                 if (koreBot && koreBot.initToken) {
@@ -412,7 +413,7 @@
       }
 
       function publishEvent(eventName) {
-        csaaKoreBotChat.dispatchEvent(new CustomEvent('CHAT_EVENT', {
+        this.dispatchEvent(new CustomEvent('CHAT_EVENT', {
           detail: {
             event: eventName
           }
@@ -453,7 +454,7 @@
         chatConfig.handleError = undefined;
         chatConfig.loadHistory = false;
 
-        $koreChatWindow.removeClass('slide');
+        $('.kore-chat-window').removeClass('slide');
         setTimeout(function () {
           showChatIcon(true);
           chatInstance.destroy();
