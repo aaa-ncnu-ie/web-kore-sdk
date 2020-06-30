@@ -8,6 +8,7 @@
   var CHAT_WINDOW_STATUS      = 'csaa_chat_window_status';
   var LIVE_CHAT               = 'csaa_chat_live_agent';
   var QUEUED_MESSAGE_COUNT    = 'csaa_chat_queued_message_count';
+  var CUSTOMER_ENGAGED        = 'csaa_chat_customer_engaged';
 
   // Chat events
   var CHAT_STARTED            = 'CHAT_STARTED';
@@ -28,6 +29,7 @@
     var defaultChatConfig;
     var chatInstance;
     var chatLifeCycle;
+    var events = {};
 
     if (window && window.KoreSDK && window.KoreSDK.dependencies && window.KoreSDK.dependencies.jQuery) {
       //load kore's jquery version
@@ -41,10 +43,11 @@
 
       chatInstance = koreBotChat();
       chatInstance.init = init();
+      chatInstance.on = on();
 
       function init () {
 
-        return function (chatConfig, chatLifeCycleObj, startChatImmediately) {
+        return function (chatConfig, startChatImmediately, chatLifeCycleObj) {
 
           // Chat Check
           if (chatLifeCycleObj && chatLifeCycleObj.isChatEnabled && !chatLifeCycleObj.isChatEnabled()) {
@@ -211,7 +214,7 @@
             $('.kore-chat-window').addClass('slide');
             renderChat();
             handleChatWindowOpen();
-            publishEvent(CHAT_MAXIMIZED);
+            emit(CHAT_MAXIMIZED);
           }
         });
       }
@@ -229,7 +232,7 @@
         var chatConfig = getChatConfig(defaultChatConfig, false);
         renderChat(chatConfig);
         handleChatWindowOpen();
-        publishEvent(CHAT_STARTED);
+        emit(CHAT_STARTED);
       }
 
       function handleChatWindowOpen() {
@@ -291,13 +294,22 @@
 
         // Open event triggers when connection established with bot
         bot.on('open', function (response) {
-          localStorage.setItem(JWT_GRANT, JSON.stringify(bot.userInfo));
+          var jwt = JSON.stringify(bot.userInfo);
+          if (localStorage.getItem(JWT_GRANT) !== jwt) {
+            localStorage.setItem(JWT_GRANT, jwt);
+          }
         });
 
         // Event occurs when you recieve any message from server
         bot.on('message', function(msg) {
           // Converting JSON string to object
           var dataObj = JSON.parse(msg.data);
+
+          if (dataObj.ok && dataObj.type === 'ack'
+            && localStorage.getItem(CUSTOMER_ENGAGED) !== 'true') {
+              emit(CHAT_CUSTOMER_ENGAGED);
+              localStorage.setItem(CUSTOMER_ENGAGED, 'true');
+          }
 
           //differ user message & bot response check message type
           if (dataObj.from === 'bot' && dataObj.type === 'bot_response') {
@@ -328,18 +340,18 @@
 
             if (msgText === 'You are now connected to an Agent.') {
               localStorage.setItem(LIVE_CHAT, 'true');
-              publishEvent(CHAT_AGENT_ENGAGED);
+              emit(CHAT_AGENT_ENGAGED);
             } else if (msgText === 'Live Agent Chat has ended.') {
               localStorage.setItem(LIVE_CHAT, 'false');
-              publishEvent(CHAT_AGENT_DISCONNECTED);
+              emit(CHAT_AGENT_DISCONNECTED);
             } else if (msgText === 'Do you want to provide feedback?') {
               localStorage.setItem(LIVE_CHAT, 'false');
-              publishEvent(CHAT_SURVEY_TRIGGERED);
+              emit(CHAT_SURVEY_TRIGGERED);
             } else if (msgText === 'Thank you for your feedback. The chat session has ended.') {
-              publishEvent(CHAT_SURVEY_ANSWERED);
+              emit(CHAT_SURVEY_ANSWERED);
               handleChatEndByAgent();
             } else if (msgText === 'Thank you. The chat session has ended.') {
-              publishEvent(CHAT_SURVEY_UNANSWERED);
+              emit(CHAT_SURVEY_UNANSWERED);
               handleChatEndByAgent();
             }
 
@@ -368,7 +380,7 @@
         }
 
         $chatBoxControls.children('.minimize-btn').off('click').on('click', function () {
-          publishEvent(CHAT_MINIMIZED);
+          emit(CHAT_MINIMIZED);
           localStorage.setItem(CHAT_WINDOW_STATUS, 'minimized');
           $koreChatWindow.removeClass('slide');
           showChatIcon(true);
@@ -429,14 +441,6 @@
         });
       }
 
-      function publishEvent(eventName) {
-        this.dispatchEvent(new CustomEvent('CHAT_EVENT', {
-          detail: {
-            eventName: eventName
-          }
-        }));
-      }
-
       function handleChatEndByUser() {
         if (localStorage.getItem(LIVE_CHAT) === 'true') {
           var messageToBot = {
@@ -445,12 +449,12 @@
           };
           chatInstance.bot.sendMessage(messageToBot);
         }
-        publishEvent(CHAT_ENDED_USER);
+        emit(CHAT_ENDED_USER);
         handleChatEnd();
       }
 
       function handleChatEndByAgent() {
-        publishEvent(CHAT_ENDED_AGENT);
+        emit(CHAT_ENDED_AGENT);
         handleChatEnd();
       }
 
@@ -460,12 +464,34 @@
         localStorage.removeItem(JWT_GRANT);
         localStorage.removeItem(LIVE_CHAT);
         localStorage.removeItem(QUEUED_MESSAGE_COUNT);
+        localStorage.removeItem(CUSTOMER_ENGAGED);
 
         $('.kore-chat-window').removeClass('slide');
         setTimeout(function () {
           showChatIcon(true);
           chatInstance.destroy();
         }, 800);
+      }
+
+      function emit(eventName) {
+        const event = events['CHAT_EVENT'];
+        if (event) {
+          event.forEach(function (fn) {
+            fn.call(null, {eventName: eventName});
+          });
+        }
+      }
+
+      function on() {
+        return function (eventName, fn) {
+          if (!events[eventName]) {
+            events[eventName] = [];
+          }
+          events[eventName] = events[eventName].filter(function (eventFn) {
+            return fn !== eventFn;
+          });
+          events[eventName].push(fn);
+        }
       }
 
       return chatInstance;
