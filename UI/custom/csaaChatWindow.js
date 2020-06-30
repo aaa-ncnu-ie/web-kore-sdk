@@ -3,12 +3,11 @@
 })(function () {
 
   // Local storage entries
-  var JWT_GRANT               = 'jwtGrant';
+  var JWT_GRANT               = 'csaa_chat_jwt';
   var BOT_USER_IDENTITY       = 'csaa_chat_unique_id';
-  var CHAT_WINDOW_STATUS      = 'csaa_chat_maximized';
-  var MESSAGE_COUNTER         = 'chatHistoryCount';
-  var LIVE_CHAT               = 'agentTfrOn';
-  var QUEUED_MESSAGE_COUNT    = 'csaa_queued_message_count';
+  var CHAT_WINDOW_STATUS      = 'csaa_chat_window_status';
+  var LIVE_CHAT               = 'csaa_chat_live_agent';
+  var QUEUED_MESSAGE_COUNT    = 'csaa_chat_queued_message_count';
 
   // Chat events
   var CHAT_STARTED            = 'CHAT_STARTED';
@@ -21,11 +20,12 @@
   var CHAT_ENDED_AGENT        = 'CHAT_ENDED_AGENT';
   var CHAT_SURVEY_TRIGGERED   = 'CHAT_SURVEY_TRIGGERED';
   var CHAT_SURVEY_ANSWERED    = 'CHAT_SURVEY_ANSWERED';
+  var CHAT_SURVEY_UNANSWERED  = 'CHAT_SURVEY_UNANSWERED';
 
   function csaaKoreBotChat() {
 
     var koreJquery;
-    var chatConfig;
+    var defaultChatConfig;
     var chatInstance;
     var chatLifeCycle;
 
@@ -33,8 +33,8 @@
       //load kore's jquery version
       koreJquery = window.KoreSDK.dependencies.jQuery;
     } else {
-        //fall back to clients jquery version
-        koreJquery = window.jQuery;
+      //fall back to clients jquery version
+      koreJquery = window.jQuery;
     }
 
     return (function ($) {
@@ -44,16 +44,17 @@
 
       function init () {
 
-        return function (defaultChatConfig, chatLifeCycleObj) {
+        return function (chatConfig, chatLifeCycleObj, startChatImmediately) {
 
           // Chat Check
           if (chatLifeCycleObj && chatLifeCycleObj.isChatEnabled && !chatLifeCycleObj.isChatEnabled()) {
+            // Do not show chat icon nor open any existing chat session
             return;
           }
 
           // Set Data
+          defaultChatConfig = chatConfig;
           chatLifeCycle = chatLifeCycleObj;
-          chatConfig = getChatConfig(defaultChatConfig);
 
           // Chat Icon
           attachChatIconUI($);
@@ -62,14 +63,42 @@
           chatIconEventListeners();
 
           // Chat Initialize
-          initializeSession(chatConfig);
+          initializeSession();
+
+          // Start Chat Session Immediately
+          if (startChatImmediately) {
+            startNewChat();
+          }
         };
       }
 
-      function getChatConfig (defaultChatConfig) {
-        //Define the bot options
-        var botOptions = {
-        };
+      function initializeSession () {
+
+        if (!isChatSessionActive()) {
+          // Show chat icon
+          setTimeout(function () { showChatIcon(true) }, 800);
+        } else {
+          // Reload session data
+          var chatConfig = getChatConfig(defaultChatConfig, true);
+
+          if (isChatWindowMinimized()) {
+            // Continue chat in minimized state
+            setTimeout(function () { showChatIcon(true) }, 800);
+            var queuedMessageCount = localStorage.getItem(QUEUED_MESSAGE_COUNT);
+            if (queuedMessageCount) {
+              var $masterButton = $bubble.children('[chat=master_button]');
+              $masterButton.attr('queued_messages', queuedMessageCount);
+            }
+          } else {
+            // Open ongoing session
+            renderChat(chatConfig);
+          }
+        }
+      }
+
+      function getChatConfig (defaultChatConfig, reloadSession) {
+
+        var botOptions = {};
         botOptions.koreAPIUrl = 'https://bots.kore.ai/api/';
         botOptions.koreSpeechAPIUrl = ''; // This option is deprecated
         botOptions.ttsSocketUrl = ''; // This option is deprecated
@@ -81,16 +110,15 @@
         botOptions.clientId = ''; // issued by the kore.ai on client app registration.
         // botOptions.clientSecret = 'PLEASE_ENTER_CLIENT_SECRET';// issued by the kore.ai on client app registration.
 
-        // Assign Bot options to chatWindow config
         var chatConfig = {
           botOptions: {},
           allowIframe: false, // set true, opens authentication links in popup window, default value is "false"
           isSendButton: false, // set true, to show send button below the compose bar
-          isTTSEnabled: true, // set false, to hide speaker icon
-          isSpeechEnabled: true, // set false, to hide mic icon
-          allowGoogleSpeech: true, //This feature requires valid Google speech API key. (Place it in 'web-kore-sdk/libs/speech/key.js')
+          isTTSEnabled: false, // set false, to hide speaker icon
+          isSpeechEnabled: false, // set false, to hide mic icon
+          allowGoogleSpeech: false, //This feature requires valid Google speech API key. (Place it in 'web-kore-sdk/libs/speech/key.js')
                         //Google speech works in Google Chrome browser without API key.
-          allowLocation: true, // set false, to deny sending location to server
+          allowLocation: false, // set false, to deny sending location to server
           loadHistory: false, // set true to load recent chat history
           messageHistoryLimit: 10, // set limit to load recent chat history
           autoEnableSpeechAndTTS: false, // set true, to use talkType voice keyboard.
@@ -99,14 +127,19 @@
         };
 
         var newBotOptions = Object.assign(botOptions, defaultChatConfig.botOptions);
-
         Object.assign(chatConfig, defaultChatConfig);
         chatConfig.botOptions = newBotOptions;
-
         chatConfig.botOptions.assertionFn = assertionFnWrapper(chatConfig.botOptions.assertionFn, chatInstance);
 
         if (chatConfig.botOptions.userIdentity === '') {
           chatConfig.botOptions.userIdentity = getBotUserIdentity();
+        }
+
+        if (reloadSession) {
+          chatConfig.botOptions.restorePS = true;
+          chatConfig.botOptions.jwtGrant = JSON.parse(localStorage.getItem(JWT_GRANT));
+          chatConfig.botOptions.chatHistory = this.chatHistory;
+          chatConfig.loadHistory = defaultChatConfig.loadHistory;
         }
 
         return chatConfig;
@@ -164,74 +197,58 @@
         $koreChatBody.css({ top: newKoreChatBodyTop + 'px' });
       }
 
-      function initializeSession () {
-
-        if (!isChatSessionActive()) {
-          // Show chat icon
-          setTimeout(function () { showChatIcon(true) }, 800);
-        } else {
-          // Reload session data
-          chatConfig.botOptions.restorePS = true;
-          chatConfig.botOptions.jwtGrant = JSON.parse(localStorage.getItem(JWT_GRANT));
-          chatConfig.botOptions.chatHistory = this.chatHistory;
-          chatConfig.loadHistory = true;
-
-          if (isChatWindowMinimized()) {
-            // Continue chat in minimized state
-            setTimeout(function () { showChatIcon(true) }, 800);
-            var queuedMessageCount = localStorage.getItem(QUEUED_MESSAGE_COUNT);
-            if (queuedMessageCount) {
-              var $masterButton = $bubble.children('[chat=master_button]');
-              $masterButton.attr('queued_messages', queuedMessageCount);
-            }
-          } else {
-            // Open ongoing session
-            renderChat();
-          }
-        }
-      }
-
-      function renderChat () {
-        chatInstance.show(chatConfig);
-        chatWindowEventListeners();
-      }
-
       function chatIconEventListeners () {
+
+        var $bubble = $('[chat=bubble]');
+        var $masterButton = $bubble.children('[chat=master_button]');
+
+        $masterButton.on('click', function () {
+
+          if (!isChatSessionActive()) {
+            startNewChat();
+          } else {
+            // Maximize window
+            $('.kore-chat-window').addClass('slide');
+            renderChat();
+            handleChatWindowOpen();
+            publishEvent(CHAT_MAXIMIZED);
+          }
+        });
+      }
+
+      function startNewChat() {
+
+        // Check whether a new chat session is allowed
+        if (chatLifeCycle && chatLifeCycle.isChatSessionEnabled && !chatLifeCycle.isChatSessionEnabled()) {
+          // Do not launch a new chat session
+          return;
+        }
+
+        // Open new session
+        $('[chat=bubble]').attr('thinking', 'yep');
+        var chatConfig = getChatConfig(defaultChatConfig, false);
+        renderChat(chatConfig);
+        handleChatWindowOpen();
+        publishEvent(CHAT_STARTED);
+      }
+
+      function handleChatWindowOpen() {
+        showChatIcon(false);
+
         var $bubble = $('[chat=bubble]');
         var $masterButton = $bubble.children('[chat=master_button]');
         var $notifications = $bubble.children('[chat=notifications]');
 
-        $masterButton.on('click', function () {
+        $masterButton.removeAttr('queued_messages');
+        $notifications.removeAttr('queued_messages');
 
-          if (isChatSessionActive()) {
+        localStorage.removeItem(QUEUED_MESSAGE_COUNT);
+        localStorage.setItem(CHAT_WINDOW_STATUS, 'maximized');
+      }
 
-            // Maximize window
-
-            $('.kore-chat-window').addClass('slide');
-            renderChat();
-            publishEvent(CHAT_MAXIMIZED);
-
-          } else {
-
-            // Check whether a new chat session is allowed
-
-            if (chatLifeCycle && chatLifeCycle.isChatSessionEnabled && !chatLifeCycle.isChatSessionEnabled()) {
-              return;
-            }
-
-            // Open new session
-
-            showChatIcon(false);
-            $bubble.attr('thinking', 'yep');
-            renderChat();
-            publishEvent(CHAT_STARTED);
-          }
-
-          localStorage.setItem(CHAT_WINDOW_STATUS, 'maximized');
-          $masterButton.removeAttr('queued_messages');
-          $notifications.removeAttr('queued_messages');
-          localStorage.removeItem(QUEUED_MESSAGE_COUNT);
-        });
+      function renderChat (chatConfig) {
+        chatInstance.show(chatConfig);
+        chatWindowEventListeners();
       }
 
       function chatWindowEventListeners() {
@@ -246,8 +263,8 @@
         var $koreChatBody = $koreChatWindow.find('.kore-chat-body');
         var $chatBoxControls = $koreChatHeader.find('.chat-box-controls');
 
-        if (chatConfig.subheader) {
-          attachSubheaderUI(chatConfig.subheader, $koreChatHeader, $koreChatBody);
+        if (defaultChatConfig.subheader) {
+          attachSubheaderUI(defaultChatConfig.subheader, $koreChatHeader, $koreChatBody);
         }
 
         $('.close-btn').on('click', function (e) {
@@ -300,34 +317,34 @@
               $buyBtn.trigger('click');
             });
 
-            var msgText = dataObj.message[0].component.payload.text;
+            var payload = dataObj.message[0].component.payload;
+            var msgText = '';
+
+            if (payload.text) {
+              msgText = payload.text;
+            } else if (payload.payload) {
+              msgText = payload.payload.text;
+            }
 
             if (msgText === 'You are now connected to an Agent.') {
               localStorage.setItem(LIVE_CHAT, 'true');
               publishEvent(CHAT_AGENT_ENGAGED);
-            }
-
-            if (msgText === 'Live Agent Chat has ended.') {
+            } else if (msgText === 'Live Agent Chat has ended.') {
               localStorage.setItem(LIVE_CHAT, 'false');
               publishEvent(CHAT_AGENT_DISCONNECTED);
-            }
-
-            if (msgText === 'Do you want to provide feedback?') {
+            } else if (msgText === 'Do you want to provide feedback?') {
               localStorage.setItem(LIVE_CHAT, 'false');
               publishEvent(CHAT_SURVEY_TRIGGERED);
-            }
-
-            if (msgText.includes('0-10 scale, 0=very dissatisfied, 10=very satisfied')) {
+            } else if (msgText === 'Thank you for your feedback. The chat session has ended.') {
               publishEvent(CHAT_SURVEY_ANSWERED);
-            }
-
-            if (msgText === 'Thank you. The chat session has ended.'
-              || msgText === 'Thank you for your feedback. The chat session has ended.') {
+              handleChatEndByAgent();
+            } else if (msgText === 'Thank you. The chat session has ended.') {
+              publishEvent(CHAT_SURVEY_UNANSWERED);
               handleChatEndByAgent();
             }
 
             if (localStorage.getItem(LIVE_CHAT) === 'true') {
-              if (chatConfig.notificaitonsEnabled && localStorage.getItem(CHAT_WINDOW_STATUS) === 'minimized') {
+              if (defaultChatConfig.notificaitonsEnabled && localStorage.getItem(CHAT_WINDOW_STATUS) === 'minimized') {
 
                 if (['XX', 'AR', 'AT', 'AST', 'ack', 'pong', 'ping'].indexOf(msgText) !== -1) return;
 
@@ -346,7 +363,7 @@
           }
         });
 
-        if (!chatConfig.draggable && $koreChatWindow.data('ui-draggable')) {
+        if (!defaultChatConfig.windowDraggable && $koreChatWindow.data('ui-draggable')) {
           $koreChatWindow.draggable('destroy');
         }
 
@@ -415,7 +432,7 @@
       function publishEvent(eventName) {
         this.dispatchEvent(new CustomEvent('CHAT_EVENT', {
           detail: {
-            event: eventName
+            eventName: eventName
           }
         }));
       }
@@ -441,18 +458,8 @@
         localStorage.removeItem(CHAT_WINDOW_STATUS);
         localStorage.removeItem(BOT_USER_IDENTITY);
         localStorage.removeItem(JWT_GRANT);
-        localStorage.removeItem(MESSAGE_COUNTER);
         localStorage.removeItem(LIVE_CHAT);
         localStorage.removeItem(QUEUED_MESSAGE_COUNT);
-
-        chatConfig.botOptions.userIdentity = getBotUserIdentity();
-        chatConfig.botOptions.jwtGrant = undefined;
-        chatConfig.botOptions.restorePS = undefined;
-        chatConfig.botOptions.chatHistory = undefined;
-
-        chatConfig.chatHistory = undefined;
-        chatConfig.handleError = undefined;
-        chatConfig.loadHistory = false;
 
         $('.kore-chat-window').removeClass('slide');
         setTimeout(function () {
