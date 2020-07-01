@@ -134,15 +134,17 @@
         chatConfig.botOptions = newBotOptions;
         chatConfig.botOptions.assertionFn = assertionFnWrapper(chatConfig.botOptions.assertionFn, chatInstance);
 
-        if (chatConfig.botOptions.userIdentity === '') {
-          chatConfig.botOptions.userIdentity = getBotUserIdentity();
-        }
-
         if (reloadSession) {
+          chatConfig.botOptions.userIdentity = localStorage.getItem(BOT_USER_IDENTITY);
           chatConfig.botOptions.restorePS = true;
           chatConfig.botOptions.jwtGrant = JSON.parse(localStorage.getItem(JWT_GRANT));
           chatConfig.botOptions.chatHistory = this.chatHistory;
           chatConfig.loadHistory = defaultChatConfig.loadHistory;
+        } else {
+          if (chatConfig.botOptions.userIdentity === '') {
+            chatConfig.botOptions.userIdentity = getUniqueID();
+          }
+          localStorage.setItem(BOT_USER_IDENTITY, chatConfig.botOptions.userIdentity);
         }
 
         return chatConfig;
@@ -190,7 +192,7 @@
       }
 
       function attachSubheaderUI (subheader, $koreChatHeader, $koreChatBody) {
-        var $subheader = $(subheader);
+        var $subheader = $('<div class="security-title">' + subheader + '</div>');
         $subheader.addClass('kore-chat-subheader');
         $subheader.insertAfter($koreChatHeader.first());
 
@@ -222,7 +224,7 @@
       function startNewChat() {
 
         // Check whether a new chat session is allowed
-        if (chatLifeCycle && chatLifeCycle.isChatSessionEnabled && !chatLifeCycle.isChatSessionEnabled()) {
+        if (chatLifeCycle && chatLifeCycle.canChatStart && !chatLifeCycle.canChatStart()) {
           // Do not launch a new chat session
           return;
         }
@@ -272,6 +274,9 @@
 
         $('.close-btn').on('click', function (e) {
           e.stopPropagation();
+          if (chatLifeCycle && chatLifeCycle.canChatEnd && !chatLifeCycle.canChatEnd()) {
+            return;
+          }
           handleChatEndByUser();
         });
 
@@ -412,22 +417,22 @@
         }
       }
 
-      function getBotUserIdentity () {
-        if (isChatSessionActive()) {
-          return localStorage.getItem(BOT_USER_IDENTITY);
-        } else {
-          var userID = getUniqueID();
-          localStorage.setItem(BOT_USER_IDENTITY, userID);
-          return userID;
-        }
-      }
-
       function showChatIcon (visibility) {
         $('[chat=bubble]').attr('visible', visibility ? 'yep': 'nope');
       }
 
       function isChatSessionActive () {
-        return localStorage.getItem(JWT_GRANT) != null;
+
+        var isChatSessionActive = localStorage.getItem(JWT_GRANT) != null
+          && localStorage.getItem(BOT_USER_IDENTITY) != null
+          && (defaultChatConfig.botOptions.userIdentity === ''
+            || defaultChatConfig.botOptions.userIdentity === localStorage.getItem(BOT_USER_IDENTITY));
+
+        if (!isChatSessionActive) {
+          clearLocalStorage();
+        }
+
+        return isChatSessionActive;
       }
 
       function isChatWindowMinimized() {
@@ -459,18 +464,21 @@
       }
 
       function handleChatEnd() {
+        clearLocalStorage();
+        $('.kore-chat-window').removeClass('slide');
+        setTimeout(function () {
+          showChatIcon(true);
+          chatInstance.destroy();
+        }, 800);
+      }
+
+      function clearLocalStorage() {
         localStorage.removeItem(CHAT_WINDOW_STATUS);
         localStorage.removeItem(BOT_USER_IDENTITY);
         localStorage.removeItem(JWT_GRANT);
         localStorage.removeItem(LIVE_CHAT);
         localStorage.removeItem(QUEUED_MESSAGE_COUNT);
         localStorage.removeItem(CUSTOMER_ENGAGED);
-
-        $('.kore-chat-window').removeClass('slide');
-        setTimeout(function () {
-          showChatIcon(true);
-          chatInstance.destroy();
-        }, 800);
       }
 
       function emit(eventName) {
