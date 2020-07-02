@@ -94,6 +94,10 @@
             }
           } else {
             // Open ongoing session
+            if (chatConfig.loadHistory) {
+              $('[chat=bubble]').attr('thinking', 'yep');
+              $('.kore-chat-window').removeClass('slide');
+            }
             renderChat(chatConfig);
           }
         }
@@ -141,6 +145,8 @@
           chatConfig.botOptions.chatHistory = this.chatHistory;
           chatConfig.loadHistory = defaultChatConfig.loadHistory;
         } else {
+          chatConfig.loadHistory = false;
+          chatConfig.messageHistoryLimit = 0;
           if (chatConfig.botOptions.userIdentity === '') {
             chatConfig.botOptions.userIdentity = getUniqueID();
           }
@@ -230,9 +236,9 @@
         }
 
         // Open new session
-        $('[chat=bubble]').attr('thinking', 'yep');
         var chatConfig = getChatConfig(defaultChatConfig, false);
         renderChat(chatConfig);
+        $('.kore-chat-window').addClass('slide');
         handleChatWindowOpen();
         emit(CHAT_STARTED);
       }
