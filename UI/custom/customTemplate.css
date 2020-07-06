@@ -1199,7 +1199,7 @@ text-overflow: ellipsis;
 
 .kore-chat-window {
   bottom: -100% !important;
-  transition: bottom 0.8s ease;
+  transition: bottom 0.6s ease;
 }
 
 .kore-chat-window.slide {
