@@ -26,7 +26,6 @@
   var CHAT_SURVEY_UNANSWERED  = 'CHAT_SURVEY_UNANSWERED';
 
   function csaaKoreBotChat() {
-
     var koreJquery;
     var koreBot;
     var defaultChatConfig;
@@ -44,13 +43,11 @@
     }
 
     return (function ($) {
-
       koreBot = koreBotChat();
       koreBot.init = init();
       koreBot.on = on();
 
       function init () {
-
         return function (chatConfig, startChatImmediately, chatLifeCycleObj) {
 
           // Chat Check
@@ -83,14 +80,13 @@
       }
 
       function initializeSession () {
-
         setChatIconVisibility(true);
 
         if (isChatSessionActive()) {
 
           // Reload session data
           if (isChatWindowMinimized()) {
-            // Continue chat in minimized stat
+            // Continue chat in minimized state
             enabledChatNotifications();
           } else {
             // Open ongoing session
@@ -100,7 +96,6 @@
       }
 
       function getChatConfig (defaultChatConfig, reloadSession) {
-
         var chatConfig = {
           botOptions: {
             koreAPIUrl: 'https://bots.kore.ai/api/',
@@ -141,7 +136,7 @@
           chatConfig.botOptions.chatHistory = this.chatHistory;
         } else {
           chatConfig.loadHistory = false;
-          if (chatConfig.botOptions.userIdentity === '') {
+          if (!chatConfig.botOptions.userIdentity) {
             chatConfig.botOptions.userIdentity = getUniqueID();
           }
           localStorage.setItem(BOT_USER_IDENTITY, chatConfig.botOptions.userIdentity);
@@ -203,7 +198,6 @@
       }
 
       function startNewChat() {
-
         setChatIconGraphics(true);
 
         // Check whether a new chat session is allowed
@@ -242,6 +236,7 @@
       function enabledChatNotifications() {
         var queuedMessageCount = localStorage.getItem(QUEUED_MESSAGE_COUNT);
         if (queuedMessageCount) {
+          var $bubble = $('[chat=bubble]');
           var $masterButton = $bubble.children('[chat=master_button]');
           $masterButton.attr('queued_messages', queuedMessageCount);
         }
@@ -259,26 +254,24 @@
       }
 
       function chatIconEventListeners () {
-
         $('[chat=bubble]')
-        .children('[chat=master_button]')
-        .on('click', function () {
-
-          if (!isChatSessionActive()) {
-            emit(CHAT_ICON_CLICKED);
-            startNewChat();
-          } else {
-            if (minimizedWithoutPageReload) {
-              $('.kore-chat-window').addClass('slide');
-              setChatIconVisibility(false);
+          .children('[chat=master_button]')
+          .on('click', function () {
+            if (!isChatSessionActive()) {
+              emit(CHAT_ICON_CLICKED);
+              startNewChat();
             } else {
-              reloadChatSession();
+              if (minimizedWithoutPageReload) {
+                $('.kore-chat-window').addClass('slide');
+                setChatIconVisibility(false);
+              } else {
+                reloadChatSession();
+              }
+              localStorage.setItem(CHAT_WINDOW_STATUS, 'maximized');
+              disableChatNotifications();
+              emit(CHAT_MAXIMIZED);
             }
-            localStorage.setItem(CHAT_WINDOW_STATUS, 'maximized');
-            disableChatNotifications();
-            emit(CHAT_MAXIMIZED);
-          }
-        });
+          });
       }
 
       function chatWindowEventListeners() {
@@ -307,22 +300,17 @@
         });
 
         bot.on('rtm_client_initialized', function () {
-          // bot.RtmClient.on('connecting', function (event) { emit('connecting'); });
-          // bot.RtmClient.on('authenticated', function (event) { emit('authenticated'); });
-          // bot.RtmClient.on('ws_opening', function (event) { emit('ws_opening'); });
-          // bot.RtmClient.on('ws_opened', function (event) { emit('ws_opened'); });
-          // bot.RtmClient.on('open', function (event) { emit('open'); });
-          // bot.RtmClient.on('disconnect', function (event) { emit('disconnect'); });
-          // bot.RtmClient.on('unable_to_rtm_start', function (event) { emit('unable_to_rtm_start'); });
-          // bot.RtmClient.on('ws_close', function (event) { emit('ws_close'); });
-          // bot.RtmClient.on('ws_error', function (event) { emit('ws_error'); });
-          // bot.RtmClient.on('attempting_reconnect', function (event) { emit('attempting_reconnect'); });
-          // bot.RtmClient.on('raw_message', function (event) { emit('raw_message'); });
+          bot.RtmClient.on('ws_error',function(event) {
+            //where event is web socket's onerror event
+          });
+
+          bot.RtmClient.on('ws_close',function(event) {
+            //where event is web socket's onclose event
+          });
         });
 
         //applicable only if botOptions.loadHistory = true;
         bot.on('history', function (historyRes) {
-          console.log("reloading 6");
           setChatIconVisibility(false);
           $koreChatWindow.addClass('slide');
         });
@@ -448,11 +436,10 @@
       }
 
       function setChatIconVisibility (visibility) {
-
         if (visibility) {
           setTimeout(function () {
             $('[chat=bubble]').attr('visible', 'yep');
-          }, 800);
+          }, 200);
         } else {
           $('[chat=bubble]').attr('visible', 'nope');
           setChatIconGraphics(false);
@@ -506,8 +493,10 @@
       function handleChatEnd() {
         clearLocalStorage();
         $('.kore-chat-window').removeClass('slide');
-        koreBot.destroy();
-        setChatIconVisibility(chatEnabled);
+        setTimeout(function () {
+          koreBot.destroy();
+          setChatIconVisibility(chatEnabled);
+        }, 400);
       }
 
       function clearLocalStorage() {
