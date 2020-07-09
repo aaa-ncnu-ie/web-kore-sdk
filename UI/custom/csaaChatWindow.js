@@ -333,6 +333,7 @@
 
         var $koreChatWindow = $('.kore-chat-window');
         var $koreChatHeader = $koreChatWindow.children('.kore-chat-header');
+        var $historyLoadingDiv = $koreChatWindow.children('.historyLoadingDiv');
         var $koreChatFooter = $koreChatWindow.children('.kore-chat-footer');
         var $koreChatBody = $koreChatWindow.children('.kore-chat-body');
         var $chatContainer = $koreChatBody.children('.chat-container');
@@ -380,8 +381,33 @@
 
         //applicable only if botOptions.loadHistory = true;
         bot.on('history', function (historyRes) {
-          setChatIconVisibility(false);
-          $koreChatWindow.addClass('slide');
+          var observer = new MutationObserver(onMutation('class', function (value) {
+            if (value.indexOf('showMsg') === -1) {
+              $chatContainer.finish();
+              setChatIconVisibility(false);
+              $koreChatWindow.addClass('slide');
+            }
+          }));
+          
+          observer.observe($historyLoadingDiv[0], {
+            attributes: true
+          });
+          
+          function onMutation(attr, cb) {
+            return function (mutationList, observer) {
+              mutationList.forEach(function (mutation) {
+                attrChange(attr, mutation, cb);
+              });
+              observer.disconnect();
+            };
+          }
+          
+          function attrChange (attr, mutation, cb) {
+            if (mutation.attributeName === attr) {
+              var attrValue = $(mutation.target).attr(mutation.attributeName);
+              cb(attrValue);
+            }
+          }
         });
 
         // Open event triggers when connection established with bot
