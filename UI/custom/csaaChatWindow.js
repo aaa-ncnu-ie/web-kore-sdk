@@ -201,6 +201,49 @@
         $koreChatBody.css({ top: newKoreChatBodyTop + 'px' });
       }
 
+      function attachLiveAgentButton ($koreChatBody, $chatContainer, $koreChatFooter) {
+        var $liveAgentButton = $('\
+          <div id="liveAgentActor" distance="close">\
+            <div>live agent</div>\
+          </div>\
+        ');
+
+        $koreChatFooter.prepend($liveAgentButton);
+
+        $chatContainer.on('scroll', function () {
+          var liveAgentButtonOffset = $liveAgentButton.offset();
+          var liveAgentButtonSelectionOffset = getLiveAgentSelection().offset();
+          var chatContainerHeight = $koreChatBody.height();
+
+          var positionDifference = Math.abs(
+            liveAgentButtonSelectionOffset.top - liveAgentButtonOffset.top
+          );
+
+          var distanceAttr;
+
+          if (positionDifference < (chatContainerHeight / 2)) {
+            distanceAttr = 'close';
+          } else if (positionDifference < chatContainerHeight) {
+            distanceAttr = 'semi-close';
+          } else {
+            distanceAttr = 'far';
+          }
+
+          $liveAgentButton.attr('distance', distanceAttr);
+        });
+
+        $liveAgentButton.children().on('click', function () {
+          getLiveAgentSelection().click();
+          $liveAgentButton.remove();
+        });
+
+        function getLiveAgentSelection () {
+          return $chatContainer
+            .find('.buttonTmplContentBox li:contains("Live Agent")')
+            .last();
+        }
+      }
+
       function startNewChat() {
         setChatIconGraphics(true);
 
@@ -289,14 +332,23 @@
         var $notifications = $bubble.children('[chat=notifications]');
 
         var $koreChatWindow = $('.kore-chat-window');
-        var $koreChatHeader = $koreChatWindow.find('.kore-chat-header');
-        var $koreChatFooter = $koreChatWindow.find('.kore-chat-footer');
-        var $koreChatBody = $koreChatWindow.find('.kore-chat-body');
-        var $chatBoxControls = $koreChatHeader.find('.chat-box-controls');
+        var $koreChatHeader = $koreChatWindow.children('.kore-chat-header');
+        var $koreChatFooter = $koreChatWindow.children('.kore-chat-footer');
+        var $koreChatBody = $koreChatWindow.children('.kore-chat-body');
+        var $chatContainer = $koreChatBody.children('.chat-container');
+        var $chatBoxControls = $koreChatHeader.children('.chat-box-controls');
         var $chatInputBox = $koreChatFooter.find('.chatInputBox');
 
         if (defaultChatConfig.subheader) {
           attachSubheaderUI(defaultChatConfig.subheader, $koreChatHeader, $koreChatBody);
+
+        }
+
+        if (defaultChatConfig.liveAgentButton) {
+          if (!(localStorage.getItem(LIVE_CHAT) === 'true')) {
+            attachLiveAgentButton($koreChatBody, $chatContainer, $koreChatFooter);
+            $chatContainer.css({ padding: '42px 20px' });
+          }
         }
 
         if (defaultChatConfig.inputFieldPlaceholder) {
@@ -382,6 +434,7 @@
               emit(CHAT_AGENT_ENGAGED);
             } else if (msgText === 'Live Agent Chat has ended.') {
               localStorage.setItem(LIVE_CHAT, 'false');
+              attachLiveAgentButton($koreChatBody, $chatContainer, $koreChatFooter);
               emit(CHAT_AGENT_DISCONNECTED);
             } else if (msgText === 'Do you want to provide feedback?') {
               localStorage.setItem(LIVE_CHAT, 'false');
