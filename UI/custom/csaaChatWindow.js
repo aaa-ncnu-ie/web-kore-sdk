@@ -474,7 +474,7 @@
             }
 
             if (localStorage.getItem(LIVE_CHAT) === 'true') {
-              if (defaultChatConfig.notificaitonsEnabled && localStorage.getItem(CHAT_WINDOW_STATUS) === 'minimized') {
+              if (defaultChatConfig.notificationsEnabled && localStorage.getItem(CHAT_WINDOW_STATUS) === 'minimized') {
 
                 if (['XX', 'AR', 'AT', 'AST', 'ack', 'pong', 'ping'].indexOf(msgText) !== -1) return;
 
