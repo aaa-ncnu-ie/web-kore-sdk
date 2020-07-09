@@ -215,6 +215,8 @@
           var liveAgentButtonSelectionOffset = getLiveAgentSelection().offset();
           var chatContainerHeight = $koreChatBody.height();
 
+          if (!liveAgentButtonSelectionOffset) return;
+
           var positionDifference = Math.abs(
             liveAgentButtonSelectionOffset.top - liveAgentButtonOffset.top
           );
