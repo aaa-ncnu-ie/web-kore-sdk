@@ -17,7 +17,7 @@
             //fall back to clients jquery version
             koreJquery = window.jQuery;
         }
-        
+
         return (function ($) {
 
             //Actual  chatwindow.js koreBotChat function code starts here
@@ -369,7 +369,7 @@
                     } catch (e) {
                         str = str || '';
                     }
-                    
+
                     var newStr = '', wrapper1;
                     if (responseType === 'user') {
                         str = str.replace(/onerror=/gi, 'abc-error=');
@@ -392,7 +392,7 @@
                                 var _newLA = document.createElement('div');
                                 var _detectedLink=linkArray[x];
                                 _newLA.innerHTML = linkArray[x];
-                                //for mailto: links, new line character need to be repaced with %0A 
+                                //for mailto: links, new line character need to be repaced with %0A
                                 if (_detectedLink.indexOf("href='mailto:") > -1 || _detectedLink.indexOf('href="mailto:') > -1) {
                                     _detectedLink = _detectedLink.split('\n').join("%0A")
 
@@ -744,7 +744,7 @@
                 setTimeout(function(){
                     chatBodyModal.find('#chatBodyModalContent').empty();
                 },1000);
-                chatBodyModal.hide(); 
+                chatBodyModal.hide();
             }
             }
         // inline model for iframes starts ends//
@@ -785,7 +785,7 @@
                         openModal(popupHtml[0], true);
                     }
                 }
-    
+
             }
         }
         // form event actions ends here //
@@ -937,6 +937,9 @@
                 me.config.botOptions.botInfo = { chatBot: _botInfo.name, taskBotId: _botInfo._id, customData: _botInfo.customData, tenanturl: _botInfo.tenanturl };
                 var tempTitle = _botInfo.name;
                 me.config.botMessages = botMessages;
+                if (me.config.inputFieldPlaceholder) {
+                    me.config.botMessages.message = me.config.inputFieldPlaceholder;
+                }
 
                 me.config.chatTitle = me.config.botMessages.connecting;
                 me.config.userAgentIE = navigator.userAgent.indexOf('Trident/') !== -1;
@@ -992,7 +995,7 @@
                     }else{
                         me.config.chatContainer.find('.kore-chat-header .header-title').html(me.config.botMessages.reconnecting);
                         me.config.chatContainer.addClass('minimize');
-                        me.skipedInit=true;                
+                        me.skipedInit=true;
                     }
                 }
                 if (ttsAudioSource) {
@@ -1016,7 +1019,7 @@
             chatWindow.prototype.bindEvents = function () {
                 var me = this;
                 var _chatContainer = me.config.chatContainer;
-               
+
                 _chatContainer.draggable({
                     handle: _chatContainer.find(".kore-chat-header .header-title"),
                     containment: "document",
@@ -1070,7 +1073,7 @@
                             } else {
                                 downloadUrl += "&download=1";
                             }
-        
+
                             var save = document.createElement('a');
                             document.body.appendChild(save);
                             save.href = downloadUrl;
@@ -1206,7 +1209,7 @@
                         try {
                          msgData = JSON.parse(msgDataText);
                         } catch (err) {
-        
+
                         }
                     }
                     if(msgData && msgData.message && msgData.message[0].component && msgData.message[0].component.payload && msgData.message[0].component.payload.formData){
@@ -1248,7 +1251,7 @@
                             try {
                                 msgData = JSON.parse($(this).attr('msgData'));
                                } catch (err) {
-               
+
                              }
                             if(msgData && msgData.message && msgData.message[0].component && (msgData.message[0].component.formData || (msgData.message[0].component.payload &&  msgData.message[0].component.payload.formData))){
                                 if(msgData.message[0].component.formData){
@@ -1505,7 +1508,7 @@
                         } else {
                             if(_ttsInterface && _ttsInterface==="webapi"){
                                 _ttsConnection = speakWithWebAPI();
- 
+
                             }else{
                                 _ttsConnection = createSocketForTTS();
                             }
@@ -1514,7 +1517,7 @@
                         }
                     }
                 });
-              
+
                 bot.on("open", function (response) {
                     accessToken = me.config.botOptions.accessToken;
                     var _chatInput = _chatContainer.find('.kore-chat-footer .chatInputBox');
@@ -3141,10 +3144,10 @@
                 };
                 chatInitialize = new chatWindow(cfg);
                 customTemplateObj = new customTemplate(cfg,chatInitialize);
-                
+
                 return this;
             };
-            
+
             this.addWidgetEvents = function (cfg) {
                 if (cfg) {
                     var wizSDK = cfg.widgetSDKInstace;
@@ -3154,7 +3157,7 @@
                     };
                 }
             };
-            
+
             this.setWidgetInstance=function(widgetSDKInstace){
                 if(widgetSDKInstace){
                     chatInitialize.config.widgetSDKInstace=widgetSDKInstace;
@@ -3176,7 +3179,7 @@
             this.initToken = function (options) {
                 assertionToken = "bearer " + options.accessToken;
             };
-                      
+
             this.hideError = function () {
                 $('.errorMsgBlock').removeClass('showError');
             }
@@ -3217,7 +3220,7 @@
                                 var _ignoreMsgs = messagesQueue.filter(function (queMsg) {
                                     return queMsg.messageId === msgData.messageId;
                                 });
-                                //dont show the the history message if we already have same message came from socket connect  
+                                //dont show the the history message if we already have same message came from socket connect
                                 if (!_ignoreMsgs.length) {
                                     try {
                                         msgData.message[0].cInfo.body = JSON.parse(msgData.message[0].cInfo.body);
@@ -3227,7 +3230,7 @@
                                         msgData.message[0].component = msgData.message[0].cInfo.body;
                                         if (msgData.message[0].component.payload.template_type === 'dropdown_template') {
                                             msgData.message[0].component.payload.fromHistory = true;
-                                            msgData.message[0].component.selectedValue=res[1].messages[index+1].message[0].cInfo.body;                                    
+                                            msgData.message[0].component.selectedValue=res[1].messages[index+1].message[0].cInfo.body;
                                         }
                                         if (msgData.message[0].component.payload.template_type === 'multi_select' || msgData.message[0].component.payload.template_type === 'advanced_multi_select') {
                                             msgData.message[0].component.payload.fromHistory = true;
@@ -3283,7 +3286,7 @@
                                                 historyLoading = false;
                                             });
                                         }
-        
+
                                     },500,messagesQueue);
                                 }
                             }, index * 100,messagesQueue);
@@ -3310,7 +3313,7 @@
                     }else{
                         console.warn("Please uncomment Google Speech files('speech/app.js','speech/key.js' and 'client_api.js' in index.html")
                     }
-        
+
                 }
             },2000);
             function isChrome() {
@@ -3737,7 +3740,7 @@
                     // Create a new instance of SpeechSynthesisUtterance.
                     var msg = new SpeechSynthesisUtterance();
                     msg.text =_txtToSpeak;
-                   //  msg.voice = speechSynthesis.getVoices().filter(function(voice) {        
+                   //  msg.voice = speechSynthesis.getVoices().filter(function(voice) {
                    //      return voice.default===true;
                    //     })[0];
                    // Queue this utterance.
