@@ -51,8 +51,8 @@
       koreBot.init = init;
       koreBot.on = on;
       koreBot.isChatActive = isChatSessionActive;
-      koreBot.endChat = endChat;
-      koreBot.reset = resetChat;
+      koreBot.endChat = handleChatEndBySystem;
+      koreBot.reset = handleChatReset;
       koreBot.chatID = getChatID;
 
       function init (chatConfig, startChatImmediately, chatLifeCycleObj) {
@@ -498,13 +498,7 @@
       }
 
       function handleChatEndByUser() {
-        if (localStorage.getItem(LIVE_CHAT) === 'true') {
-          var messageToBot = {
-            message: { body: 'endAgentChat' },
-            resourceid: '/bot.message'
-          };
-          koreBot.bot.sendMessage(messageToBot);
-        }
+        endLiveAgentSession();
         emit(CHAT_ENDED_USER);
         handleChatEnd();
       }
@@ -513,29 +507,16 @@
         emit(CHAT_ENDED_AGENT);
         handleChatEnd(true);
       }
-
-      function handleChatEnd(hideSlowly) {
-        clearLocalStorage();
-        setTimeout(function () {
-          $('.kore-chat-window').removeClass('slide');
-          setTimeout(function () {
-            koreBot.destroy();
-            setChatIconVisibility(chatEnabled);
-          }, 500);
-        }, hideSlowly ? 2500 : 500);
-      }
       
-      function endChat() {
-        // Clear existing sessions
-        if (isChatSessionActive()) {
-          emit(CHAT_ENDED_SYSTEM);
-        }
+      function handleChatEndBySystem() {
+        endLiveAgentSession();
+        emit(CHAT_ENDED_SYSTEM);
         handleChatEnd();
       }
-      
-      function resetChat() {
-        // Clear existing sessions
+
+      function handleChatReset() {
         if (isChatSessionActive()) {
+          endLiveAgentSession();
           emit(CHAT_ENDED_SYSTEM);
         }
         defaultChatConfig = undefined;
@@ -544,6 +525,27 @@
         minimizedWithoutPageReload = false;
         chatEnabled = false;
         handleChatEnd();
+      }
+
+      function handleChatEnd(delayClosure) {
+        clearLocalStorage();
+        setTimeout(function () {
+          $('.kore-chat-window').removeClass('slide');
+          setTimeout(function () {
+            koreBot.destroy();
+            setChatIconVisibility(chatEnabled);
+          }, 500);
+        }, delayClosure ? 2500 : 500);
+      }
+
+      function endLiveAgentSession() {
+        if (localStorage.getItem(LIVE_CHAT) === 'true') {
+          var messageToBot = {
+            message: { body: 'endAgentChat' },
+            resourceid: '/bot.message'
+          };
+          koreBot.bot.sendMessage(messageToBot);
+        }
       }
 
       function clearLocalStorage() {
