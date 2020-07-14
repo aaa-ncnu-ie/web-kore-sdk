@@ -35,7 +35,6 @@
     var defaultChatConfig;
     var chatLifeCycle;
     var events = {};
-    var minimizedWithoutPageReload = false;
     var chatEnabled = true;
 
     if (window && window.KoreSDK && window.KoreSDK.dependencies && window.KoreSDK.dependencies.jQuery) {
@@ -89,10 +88,10 @@
           if (isChatWindowMinimized()) {
             // Continue chat in minimized state
             enabledChatNotifications();
-          } else {
-            // Open ongoing session
-            reloadChatSession();
           }
+
+          // Reload ongoing session
+          reloadChatSession();
         } else {
           // Start Chat Session Immediately
           if (startChatImmediately) {
@@ -223,15 +222,18 @@
       }
 
       function reloadChatSession() {
-        if (defaultChatConfig.loadHistory) {
-          setChatIconGraphics(true);
-        } else {
-          setChatIconVisibility(false);
+        if (!isChatWindowMinimized()) {
+          if (defaultChatConfig.loadHistory) {
+            setChatIconGraphics(true);
+          } else {
+            setChatIconVisibility(false);
+          }
         }
+
         var chatConfig = getChatConfig(defaultChatConfig, true);
         renderChat(chatConfig);
 
-        if (!defaultChatConfig.loadHistory) {
+        if (!isChatWindowMinimized() && !defaultChatConfig.loadHistory) {
           $('.kore-chat-window').addClass('slide');
         }
       }
@@ -270,12 +272,8 @@
               emit(CHAT_ICON_CLICKED);
               startNewChat();
             } else {
-              if (minimizedWithoutPageReload) {
-                $('.kore-chat-window').addClass('slide');
-                setChatIconVisibility(false);
-              } else {
-                reloadChatSession();
-              }
+              setChatIconVisibility(false);
+              $('.kore-chat-window').addClass('slide');
               localStorage.setItem(CHAT_WINDOW_STATUS, 'maximized');
               disableChatNotifications();
               emit(CHAT_MAXIMIZED);
@@ -330,8 +328,10 @@
 
         //applicable only if botOptions.loadHistory = true;
         bot.on('history', function (historyRes) {
-          setChatIconVisibility(false);
-          $koreChatWindow.addClass('slide');
+          if (!isChatWindowMinimized()) {
+            setChatIconVisibility(false);
+            $koreChatWindow.addClass('slide');
+          }
         });
 
         // Open event triggers when connection established with bot
@@ -424,7 +424,6 @@
         $chatBoxControls.children('.minimize-btn').off('click').on('click', function () {
           $koreChatWindow.removeClass('slide');
           setChatIconVisibility(true);
-          minimizedWithoutPageReload = true;
           localStorage.setItem(CHAT_WINDOW_STATUS, 'minimized');
           emit(CHAT_MINIMIZED);
         });
@@ -522,7 +521,6 @@
         defaultChatConfig = undefined;
         chatLifeCycle = undefined;
         events = {};
-        minimizedWithoutPageReload = false;
         chatEnabled = false;
         handleChatEnd();
       }
