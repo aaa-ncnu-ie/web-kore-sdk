@@ -1539,4 +1539,45 @@ text-overflow: ellipsis;
   .em-spock-hand.em-svg {
     background: url("https://twemoji.maxcdn.com/2/72x72/1f596.png");
   }
-  
+
+  .kore-chat-window #liveAgentActor {
+    position: absolute;
+    top: 4;
+    left: 50%;
+    z-index: -1;
+    transform: translateX(-50%);
+  }
+
+  .kore-chat-window #liveAgentActor > div {
+    box-shadow: 0 0 7px 0 rgba(158,158,158,.67059);
+    padding: 11px 16px;
+    color: #1778d3;
+    border: 1px solid #eee;
+    border-radius: 12px 12px 0 0;
+    text-transform: capitalize;
+    font-size: 16px;
+    cursor: pointer;
+    border-bottom: 0 none;
+    transition: transform .2s ease-in-out;
+    background-color: #fff;
+  }
+
+  .kore-chat-window #liveAgentActor[distance="close"] > div {
+    transform: translateY(0%);
+  }
+
+  .kore-chat-window #liveAgentActor[distance="semi-close"] > div {
+    transform: translateY(calc(-75% - 16px));
+  }
+
+  .kore-chat-window #liveAgentActor[distance="far"] > div {
+    transform: translateY(calc(-100% - 16px));
+  }
+
+  .kore-chat-window #liveAgentActor > div:hover {
+    background: #1778d3;
+    color: #fff;
+    transform: translateY(calc(-100% - 18px)) scale3d(1.05, 1.05, 1);
+    border-color: #1778d3;
+    backface-visibility: hidden;
+  }
