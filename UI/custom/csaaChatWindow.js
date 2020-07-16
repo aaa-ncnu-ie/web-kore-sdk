@@ -54,13 +54,16 @@
       koreBot.reset = handleChatReset;
       koreBot.chatID = getChatID;
 
-      function init (chatConfig, startChatImmediately, chatLifeCycleObj) {
+      function init (startChatImmediately, chatLifeCycleObj) {
 
+        // Set Data
+        chatLifeCycle = chatLifeCycleObj;
+        
         // Chat Check
         chatLifeCycleObj.isChatEnabled().then(function (response) {
           chatEnabled = response;
           if (chatEnabled || isChatSessionActive()) {
-            initializeSession(chatConfig, startChatImmediately, chatLifeCycleObj);
+            initializeSession(startChatImmediately);
           }
         }).catch(function (error) {
           chatEnabled = false;
@@ -68,11 +71,7 @@
         });
       }
 
-      function initializeSession (chatConfig, startChatImmediately, chatLifeCycleObj) {
-
-        // Set Data
-        defaultChatConfig = chatConfig;
-        chatLifeCycle = chatLifeCycleObj;
+      function initializeSession (startChatImmediately) {
 
         // Chat Icon
         attachChatIconUI($);
@@ -100,54 +99,63 @@
         }
       }
 
-      function getChatConfig (defaultChatConfig, reloadSession) {
-        var chatConfig = {
-          botOptions: {
-            koreAPIUrl: 'https://bots.kore.ai/api/',
-            koreSpeechAPIUrl: '',
-            ttsSocketUrl: '',
-            assertionFn: undefined,
-            koreAnonymousFn: koreAnonymousFn,
-            botInfo: {'name':'', '_id' :']'},
-            userIdentity: '',
-            clientId: ''
-          },
-          allowIframe: false,
-          isSendButton: false,
-          isTTSEnabled: false,
-          isSpeechEnabled: false,
-          allowGoogleSpeech: false,
-          allowLocation: false,
-          loadHistory: false,
-          messageHistoryLimit: 10,
-          autoEnableSpeechAndTTS: false,
-          graphLib: 'd3',
-          googleMapsAPIKey: ''
-        };
-
-        var mergedBotOptions = Object.assign({}, chatConfig.botOptions, defaultChatConfig.botOptions);
-        Object.assign(chatConfig, defaultChatConfig);
-        chatConfig.botOptions = mergedBotOptions;
-        chatConfig.botOptions.assertionFn = assertionFnWrapper(chatConfig.botOptions.assertionFn, koreBot);
-
-        if (reloadSession) {
-          if (defaultChatConfig.loadHistory) {
-            chatConfig.loadHistory = true;
-            chatConfig.botOptions.chatHistory = this.chatHistory;
-          }
-          chatConfig.botOptions.userIdentity = localStorage.getItem(BOT_USER_IDENTITY);
-          chatConfig.botOptions.restorePS = true;
-          chatConfig.botOptions.jwtGrant = JSON.parse(localStorage.getItem(JWT_GRANT));
-          chatConfig.botOptions.chatHistory = this.chatHistory;
-        } else {
-          chatConfig.loadHistory = false;
-          if (!chatConfig.botOptions.userIdentity) {
-            chatConfig.botOptions.userIdentity = getUniqueID();
-          }
-          localStorage.setItem(BOT_USER_IDENTITY, chatConfig.botOptions.userIdentity);
-        }
-
-        return chatConfig;
+      function getChatConfig (reloadSession) {
+        
+        return new Promise(function (resolve, reject) {
+          chatLifeCycle.getConfig().then(function (response) {
+            defaultChatConfig = response;
+            
+            var chatConfig = {
+              botOptions: {
+                koreAPIUrl: 'https://bots.kore.ai/api/',
+                koreSpeechAPIUrl: '',
+                ttsSocketUrl: '',
+                assertionFn: undefined,
+                koreAnonymousFn: koreAnonymousFn,
+                botInfo: {'name':'', '_id' :']'},
+                userIdentity: '',
+                clientId: ''
+              },
+              allowIframe: false,
+              isSendButton: false,
+              isTTSEnabled: false,
+              isSpeechEnabled: false,
+              allowGoogleSpeech: false,
+              allowLocation: false,
+              loadHistory: false,
+              messageHistoryLimit: 10,
+              autoEnableSpeechAndTTS: false,
+              graphLib: 'd3',
+              googleMapsAPIKey: ''
+            };
+    
+            var mergedBotOptions = Object.assign({}, chatConfig.botOptions, defaultChatConfig.botOptions);
+            Object.assign(chatConfig, defaultChatConfig);
+            chatConfig.botOptions = mergedBotOptions;
+            chatConfig.botOptions.assertionFn = assertionFnWrapper(chatConfig.botOptions.assertionFn, koreBot);
+    
+            if (reloadSession) {
+              if (defaultChatConfig.loadHistory) {
+                chatConfig.loadHistory = true;
+                chatConfig.botOptions.chatHistory = this.chatHistory;
+              }
+              chatConfig.botOptions.userIdentity = localStorage.getItem(BOT_USER_IDENTITY);
+              chatConfig.botOptions.restorePS = true;
+              chatConfig.botOptions.jwtGrant = JSON.parse(localStorage.getItem(JWT_GRANT));
+              chatConfig.botOptions.chatHistory = this.chatHistory;
+            } else {
+              chatConfig.loadHistory = false;
+              if (!chatConfig.botOptions.userIdentity) {
+                chatConfig.botOptions.userIdentity = getUniqueID();
+              }
+              localStorage.setItem(BOT_USER_IDENTITY, chatConfig.botOptions.userIdentity);
+            }
+            
+            resolve(chatConfig);
+          }).catch(function (error) {
+            reject(error);
+          });
+        });
       }
 
       function attachChatIconUI ($) {
@@ -209,9 +217,12 @@
         chatLifeCycle.canChatStart().then(function (response) {
           if (response) {
             // Open new session
-            var chatConfig = getChatConfig(defaultChatConfig, false);
-            renderChat(chatConfig);
-            localStorage.setItem(CHAT_WINDOW_STATUS, 'maximized');
+            getChatConfig(false).then(function (chatConfig) {
+              renderChat(chatConfig);
+              localStorage.setItem(CHAT_WINDOW_STATUS, 'maximized');  
+            }).catch(function (error) {
+              setChatIconGraphics(false);
+            });
           } else {
             setChatIconGraphics(false);
           }
@@ -229,13 +240,15 @@
             setChatIconVisibility(false);
           }
         }
-
-        var chatConfig = getChatConfig(defaultChatConfig, true);
-        renderChat(chatConfig);
-
-        if (!isChatWindowMinimized() && !defaultChatConfig.loadHistory) {
-          $('.kore-chat-window').addClass('slide');
-        }
+        
+        getChatConfig(true).then(function (chatConfig) {
+          renderChat(chatConfig);
+          if (!isChatWindowMinimized() && !defaultChatConfig.loadHistory) {
+            $('.kore-chat-window').addClass('slide');
+          }
+        }).catch(function (error) {
+          handleChatEnd();
+        });
       }
 
       function renderChat (chatConfig) {
@@ -531,6 +544,7 @@
           $('.kore-chat-window').removeClass('slide');
           setTimeout(function () {
             koreBot.destroy();
+            setChatIconGraphics(false);
             setChatIconVisibility(chatEnabled);
           }, 500);
         }, delayClosure ? 2500 : 500);
