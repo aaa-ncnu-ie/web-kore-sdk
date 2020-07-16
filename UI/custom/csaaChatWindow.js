@@ -278,15 +278,16 @@
       }
 
       function reloadChatSession() {
-        if (!isChatWindowMinimized()) {
-          if (defaultChatConfig.loadHistory) {
-            setChatIconGraphics(true);
-          } else {
-            setChatIconVisibility(false);
-          }
-        }
         
         getChatConfig(true).then(function (chatConfig) {
+          if (!isChatWindowMinimized()) {
+            if (defaultChatConfig.loadHistory) {
+              setChatIconGraphics(true);
+            } else {
+              setChatIconVisibility(false);
+            }
+          }
+
           renderChat(chatConfig);
           if (!isChatWindowMinimized() && !defaultChatConfig.loadHistory) {
             $('.kore-chat-window').addClass('slide');
