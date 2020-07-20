@@ -1542,7 +1542,7 @@ text-overflow: ellipsis;
 
   .kore-chat-window #liveAgentActor {
     position: absolute;
-    top: 4;
+    top: 0px;
     left: 50%;
     z-index: -1;
     transform: translateX(-50%);
@@ -1567,17 +1567,17 @@ text-overflow: ellipsis;
   }
 
   .kore-chat-window #liveAgentActor[distance="semi-close"] > div {
-    transform: translateY(calc(-75% - 16px));
+    transform: translateY(-75%);
   }
 
   .kore-chat-window #liveAgentActor[distance="far"] > div {
-    transform: translateY(calc(-100% - 16px));
+    transform: translateY(-100%);
   }
 
   .kore-chat-window #liveAgentActor > div:hover {
     background: #1778d3;
     color: #fff;
-    transform: translateY(calc(-100% - 18px)) scale3d(1.05, 1.05, 1);
+    transform: translateY(-100%) scale3d(1.05, 1.05, 1);
     border-color: #1778d3;
     backface-visibility: hidden;
   }
