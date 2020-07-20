@@ -453,6 +453,7 @@
           var dataObj = JSON.parse(msg.data);
 
           if (dataObj.ok && dataObj.type === 'ack'
+            && isChatSessionActive()
             && localStorage.getItem(CUSTOMER_ENGAGED) !== 'true') {
               emit(CHAT_CUSTOMER_ENGAGED);
               localStorage.setItem(CUSTOMER_ENGAGED, 'true');
