@@ -1198,6 +1198,8 @@ text-overflow: ellipsis;
 }
 
 .kore-chat-window {
+  left: initial !important;
+  right: 10px;
   bottom: -100% !important;
   transition: bottom 0.6s ease;
 }
@@ -1221,6 +1223,10 @@ text-overflow: ellipsis;
 
 .kore-chat-window .kore-chat-body {
   background-color: white;
+}
+
+.kore-chat-window .kore-chat-body ul.chat-container {
+  overflow-x: hidden;
 }
 
 .kore-chat-window ul.chat-container li .extra-info {
@@ -1542,7 +1548,7 @@ text-overflow: ellipsis;
 
   .kore-chat-window #liveAgentActor {
     position: absolute;
-    top: 0px;
+    top: 6px;
     left: 50%;
     z-index: -1;
     transform: translateX(-50%);
@@ -1567,17 +1573,17 @@ text-overflow: ellipsis;
   }
 
   .kore-chat-window #liveAgentActor[distance="semi-close"] > div {
-    transform: translateY(-75%);
+    transform: translateY(calc(-75% - 6px));
   }
 
   .kore-chat-window #liveAgentActor[distance="far"] > div {
-    transform: translateY(-100%);
+    transform: translateY(calc(-100% - 6px));
   }
 
   .kore-chat-window #liveAgentActor > div:hover {
     background: #1778d3;
     color: #fff;
-    transform: translateY(-100%) scale3d(1.05, 1.05, 1);
+    transform: translateY(calc(-100% - 7px)) scale3d(1.05, 1.05, 1);
     border-color: #1778d3;
     backface-visibility: hidden;
   }
