@@ -1373,7 +1373,7 @@ KoreRTMClient.prototype.send = function send(message, optCb) {
   var err;
   var _this = this;
 
-  if (this.connected && !this._reconnecting) {
+  if ((this.connected && !this._reconnecting) || window.navigator.onLine) {
     wsMsg.id = wsMsg.clientMessageId || this.nextMessageId();
     jsonMessage = JSON.stringify(wsMsg);
 
