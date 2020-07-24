@@ -2479,7 +2479,7 @@
                     {{if msgData.message}} \
                         {{each(key, msgItem) msgData.message}} \
                             {{if msgItem.cInfo && msgItem.type === "text"}} \
-                                <li data-time="${msgData.createdOn}" {{if msgData.type !== "bot_response"}}id="msg_${msgItem.clientMessageId}"{{/if}} class="{{if msgData.type === "bot_response"}}fromOtherUsers{{else}}fromCurrentUser{{/if}} {{if msgData.icon}}with-icon{{/if}}" data-text="${helpers.truncateWords(msgItem.cInfo.body, 1, "")}"> \
+                                <li {{if msgData.type !== "bot_response"}}id="msg_${msgItem.clientMessageId}"{{/if}} class="{{if msgData.type === "bot_response"}}fromOtherUsers{{else}}fromCurrentUser{{/if}} {{if msgData.icon}}with-icon{{/if}}" data-text="${helpers.truncateWords(msgItem.cInfo.body, 1, "")}"> \
                                     {{if msgData.createdOn}}<div aria-live="off" class="extra-info">${helpers.formatDate(msgData.createdOn)}</div>{{/if}} \
                                     {{if msgData.icon}}<div aria-live="off" class="profile-photo"> <div class="user-account avtar" style="background-image:url(${msgData.icon})" title="User Avatar"></div> </div> {{/if}} \
                                     <div aria-live="assertive"  class="messageBubble">\
@@ -2580,7 +2580,7 @@
                 </script>';
                 var buttonTemplate = '<script id="chat_message_tmpl" type="text/x-jqury-tmpl"> \
                     {{if msgData.message}} \
-                        <li data-time="${msgData.createdOn}" {{if msgData.type !== "bot_response"}}id="msg_${msgItem.clientMessageId}"{{/if}} class="{{if msgData.type === "bot_response"}}fromOtherUsers{{else}}fromCurrentUser{{/if}} with-icon"> \
+                        <li {{if msgData.type !== "bot_response"}}id="msg_${msgItem.clientMessageId}"{{/if}} class="{{if msgData.type === "bot_response"}}fromOtherUsers{{else}}fromCurrentUser{{/if}} with-icon"> \
                             <div class="buttonTmplContent"> \
                                 {{if msgData.createdOn}}<div aria-live="off" class="extra-info">${helpers.formatDate(msgData.createdOn)}</div>{{/if}} \
                                 {{if msgData.icon}}<div aria-live="off" class="profile-photo"> <div class="user-account avtar" style="background-image:url(${msgData.icon})"></div> </div> {{/if}} \
@@ -3207,12 +3207,6 @@
                     if (res && res[1] && res[1].messages.length > 0) {
                         $('.chat-container').hide();
                         $('.historyLoadingDiv').addClass('showMsg');
-                        // var clone = res[1].messages.slice(0);
-
-                        // var sortedClone = clone.sort(function (a, b) {
-                        //     return  new Date(a.createdOn) - new Date(b.createdOn);
-                        // });
-
                         res[1].messages.forEach(function (msgData, index) {
                             setTimeout(function (messagesQueue) {
                                 // try {
