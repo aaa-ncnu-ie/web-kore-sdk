@@ -1573,17 +1573,17 @@ text-overflow: ellipsis;
   }
 
   .kore-chat-window #liveAgentActor[distance="semi-close"] > div {
-    transform: translateY(calc(-75% - 6px));
+    transform: translateY(-90%);
   }
 
   .kore-chat-window #liveAgentActor[distance="far"] > div {
-    transform: translateY(calc(-100% - 6px));
+    transform: translateY(-110%);
   }
 
   .kore-chat-window #liveAgentActor > div:hover {
     background: #1778d3;
     color: #fff;
-    transform: translateY(calc(-100% - 7px)) scale3d(1.05, 1.05, 1);
+    transform: translateY(-120%) scale3d(1.05, 1.05, 1);
     border-color: #1778d3;
     backface-visibility: hidden;
   }
