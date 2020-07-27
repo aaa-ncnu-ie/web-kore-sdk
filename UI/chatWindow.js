@@ -673,7 +673,6 @@
                 this.config = extend(this.config, cfg);
                 window._chatHistoryLoaded = false;
                 this.init();
-                updateOnlineStatus();
                 addBottomSlider();
                 window.addEventListener('online', updateOnlineStatus);
                 window.addEventListener('offline', updateOnlineStatus);
@@ -800,6 +799,8 @@
                 if ("boolean" === typeof(navigator["onLine"])) {
                     if (navigator.onLine) {
                         this.hideError();
+
+                        if (bot && bot.RtmClient ) bot.getHistory({ forHistorySync: true });
 
                     } else {
                         this.showError("You are currently offline")
@@ -3203,7 +3204,7 @@
                 }, 50);*/
             }
             this.chatHistory = function (res) {
-                if (loadHistory) {
+                if (loadHistory || res[2] === 'historySync') {
                     historyLoading = true;
                     var me = window.chatContainerConfig;
                     if (res && res[1] && res[1].messages.length > 0) {

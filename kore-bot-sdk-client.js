@@ -46,7 +46,11 @@ var _chatHistoryLoaded = false;
 inherits(KoreBot, EventEmitter);
 
 KoreBot.prototype.emit = function emit() {
-	if(!_chatHistoryLoaded && arguments && arguments[0] === 'history') {
+	if (this.historySyncInProgress && arguments && arguments[0] === 'history') {
+		arguments[2] = 'historySync';
+		_chatHistoryLoaded = true;
+		this.cbBotChatHistory(arguments);
+	}else if(!window._chatHistoryLoaded && arguments && arguments[0] === 'history') {
 		_chatHistoryLoaded = true;
 		this.cbBotChatHistory(arguments);
 	}
@@ -298,6 +302,10 @@ KoreBot.prototype.getHistory = function(opts) {
 
 	__opts__.botInfo = this.options.botInfo;
 	__opts__.authorization = "bearer " + this.WebClient.user.accessToken;
+
+	if (opts.forHistorySync) {
+		this.historySyncInProgress = true;
+}
 
 	if (__opts__.forward)
 		this.WebClient.history.history(__opts__, bind(this.onForwardHistory, this));
@@ -1373,7 +1381,7 @@ KoreRTMClient.prototype.send = function send(message, optCb) {
   var err;
   var _this = this;
 
-  if (this.connected && !this._reconnecting) {
+  if ((this.connected && !this._reconnecting) && window.navigator.onLine) {
     wsMsg.id = wsMsg.clientMessageId || this.nextMessageId();
     jsonMessage = JSON.stringify(wsMsg);
 
