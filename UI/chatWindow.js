@@ -695,7 +695,7 @@
                 this.config = extend(this.config, cfg);
                 window._chatHistoryLoaded = false;
                 this.init();
-                updateOnlineStatus();
+                // updateOnlineStatus();
                 addBottomSlider();
                 window.addEventListener('online', updateOnlineStatus);
                 window.addEventListener('offline', updateOnlineStatus);

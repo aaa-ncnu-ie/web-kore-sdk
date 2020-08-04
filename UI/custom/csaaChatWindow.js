@@ -210,7 +210,7 @@
         $subheader.insertAfter($koreChatHeader.first());
 
         var oldKoreChatBodyTop = $koreChatBody.css('top');
-        var newKoreChatBodyTop = parseFloat(oldKoreChatBodyTop) + $subheader.height();
+        var newKoreChatBodyTop = parseFloat(oldKoreChatBodyTop) + $subheader.outerHeight();
 
         $koreChatBody.css({ top: newKoreChatBodyTop + 'px' });
       }
@@ -288,7 +288,6 @@
       }
 
       function reloadChatSession() {
-        
         getChatConfig(true).then(function (chatConfig) {
           if (!isChatWindowMinimized()) {
             if (defaultChatConfig.loadHistory) {
