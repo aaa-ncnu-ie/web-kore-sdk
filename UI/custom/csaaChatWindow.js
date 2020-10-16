@@ -649,7 +649,7 @@
       }
 
       function endLiveAgentSession() {
-        if (localStorage.getItem(LIVE_CHAT) === 'true') {
+        if (localStorage.getItem(CUSTOMER_ENGAGED) === 'true' || localStorage.getItem(LIVE_CHAT) === 'true') {
           var messageToBot = {
             message: { body: 'endAgentChat' },
             resourceid: '/bot.message'
